@@ -16,8 +16,8 @@ DB_CONNECTION=sqlsrv
 DB_HOST=127.0.0.1
 DB_PORT=1433
 DB_DATABASE=bus_invoice_db
-DB_USERNAME=sa
-DB_PASSWORD=Password.123
+DB_USERNAME=your_sqlsrv_username
+DB_PASSWORD=your_sqlsrv_password
 ```
 
 ## Setup Proyek
