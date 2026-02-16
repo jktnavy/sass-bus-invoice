@@ -25,7 +25,9 @@ class CreateQuotation extends CreateRecordPage
         $data['fare_text_label'] ??= 'Harga sewa bus';
         $data['opening_paragraph'] ??= QuotationForm::defaultOpeningParagraph();
         $data['closing_paragraph'] ??= 'Demikian surat penawaran ini kami sampaikan, besar harapan kami agar dapat bekerja sama dengan instansi yang Bapak / Ibu pimpin. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.';
+        $data['usage_end_date'] = filled($data['usage_end_date'] ?? null) ? $data['usage_end_date'] : ($data['usage_date'] ?? null);
         $data['included_text'] = filled($data['included_text'] ?? null) ? $data['included_text'] : null;
+        $data['excluded_text'] = filled($data['excluded_text'] ?? null) ? $data['excluded_text'] : null;
         $data['facilities_text'] = filled($data['facilities_text'] ?? null) ? $data['facilities_text'] : 'AC, TV, Karaoke, Reclining Seats';
         $data['payment_method_text'] = QuotationForm::defaultPaymentMethodText();
         $data['signatory_name'] = $settings['signatory_name'] ?? auth()->user()?->name;

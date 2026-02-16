@@ -12,7 +12,7 @@ class DocumentPdfService
 {
     public function renderQuotation(Quotation $quotation): array
     {
-        $quotation->load(['customer', 'items.tax']);
+        $quotation->load(['customer.pics', 'items.tax']);
         $tenant = Tenant::query()->find($quotation->tenant_id);
 
         $bytes = Pdf::loadView('pdf.quotation', [

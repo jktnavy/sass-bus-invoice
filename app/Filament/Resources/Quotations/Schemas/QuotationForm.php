@@ -10,13 +10,14 @@ use App\Models\Tax;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class QuotationForm
 {
@@ -66,8 +67,45 @@ class QuotationForm
                             ->helperText('Otomatis +7 hari dari Tanggal Quotation, namun tetap bisa diubah manual.')
                             ->columnSpan(4),
                         DatePicker::make('usage_date')
-                            ->label('Tanggal Pemakaian')
-                            ->helperText('Tanggal pelaksanaan layanan/sewa.')
+                            ->label('Tanggal Awal Pemakaian')
+                            ->live()
+                            ->afterStateUpdated(function ($state, callable $set): void {
+                                if (! $state) {
+                                    return;
+                                }
+
+                                // Saat tanggal awal berubah, tanggal akhir otomatis mengikuti.
+                                $set('usage_end_date', $state);
+                            })
+                            ->helperText('Tanggal mulai pelaksanaan layanan/sewa.')
+                            ->columnSpan(4),
+                        DatePicker::make('usage_end_date')
+                            ->label('Tanggal Akhir Pemakaian')
+                            ->live()
+                            ->rule('after_or_equal:usage_date')
+                            ->helperText('Tanggal selesai pelaksanaan layanan/sewa.')
+                            ->columnSpan(4),
+                        Placeholder::make('usage_duration_days')
+                            ->label('Durasi Pemakaian')
+                            ->content(function (callable $get): HtmlString {
+                                $start = $get('usage_date');
+                                $end = $get('usage_end_date');
+
+                                if (! $start || ! $end) {
+                                    return new HtmlString('<span style="color:#6b7280;">Isi tanggal awal dan akhir untuk menghitung durasi.</span>');
+                                }
+
+                                $startDate = Carbon::parse($start)->startOfDay();
+                                $endDate = Carbon::parse($end)->startOfDay();
+
+                                if ($endDate->lt($startDate)) {
+                                    return new HtmlString('<span style="color:#dc2626; font-weight:600;">Tanggal akhir tidak boleh sebelum tanggal awal.</span>');
+                                }
+
+                                $days = $startDate->diffInDays($endDate) + 1;
+
+                                return new HtmlString('<strong>'.$days.' hari</strong>');
+                            })
                             ->columnSpan(4),
                         TextInput::make('city')
                             ->label('Kota Surat')
@@ -187,37 +225,26 @@ class QuotationForm
                     ->columnSpanFull()
                     ->columns(12)
                     ->schema([
-                        Toggle::make('is_all_in')
-                            ->label('All-Ins')
-                            ->dehydrated(false)
-                            ->default(false)
-                            ->live()
-                            ->helperText('Aktifkan jika harga sudah termasuk Tol, Parkir, BBM, Premi Driver, dan Kernet.')
-                            ->afterStateHydrated(function (callable $set, callable $get): void {
-                                $current = trim((string) $get('included_text'));
-                                $set('is_all_in', str_contains(mb_strtolower($current), mb_strtolower(self::allInIncludedText())));
-                            })
-                            ->afterStateUpdated(function ($state, callable $set, callable $get): void {
-                                if ($state) {
-                                    $set('included_text', self::allInIncludedText());
-
-                                    return;
-                                }
-
-                                if (trim((string) $get('included_text')) === self::allInIncludedText()) {
-                                    $set('included_text', '');
-                                }
-                            })
-                            ->columnSpan(4),
-                        Hidden::make('included_text')
-                            ->default(''),
+                        Textarea::make('included_text')
+                            ->label('Harga Sudah Termasuk')
+                            ->rows(3)
+                            ->default(self::allInIncludedText())
+                            ->placeholder('Contoh: Tol, Parkir, BBM, Premi Driver, dan Kernet')
+                            ->helperText('Default otomatis terisi. Jika dikosongkan, baris ini tidak tampil di PDF.')
+                            ->columnSpan(6),
+                        Textarea::make('excluded_text')
+                            ->label('Harga Tidak Termasuk')
+                            ->rows(3)
+                            ->placeholder('Contoh: Tips kru, penginapan kru, biaya masuk objek wisata')
+                            ->helperText('Jika diisi, PDF akan menampilkan baris "Harga Tidak Termasuk".')
+                            ->columnSpan(6),
                         Textarea::make('facilities_text')
                             ->label('Informasi Fasilitas')
                             ->rows(3)
                             ->default('AC, TV, Karaoke, Reclining Seats')
                             ->placeholder('Contoh: AC, TV, Karaoke, Reclining Seats')
                             ->helperText('Default fasilitas sudah terisi, namun tetap bisa diubah.')
-                            ->columnSpan(8),
+                            ->columnSpan(12),
                     ]),
 
                 Section::make('Item Quotation')

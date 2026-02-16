@@ -24,7 +24,7 @@ class Quotation extends Model
         'sub_total', 'discount_total', 'tax_total', 'grand_total',
         'city', 'recipient_title_line1', 'recipient_company_line2', 'attachment_text', 'subject_text',
         'opening_paragraph', 'vehicle_type_text', 'service_route_text', 'fare_text_label', 'fare_amount',
-        'usage_date', 'included_text', 'facilities_text', 'payment_method_text', 'closing_paragraph',
+        'usage_date', 'usage_end_date', 'included_text', 'excluded_text', 'facilities_text', 'payment_method_text', 'closing_paragraph',
         'signatory_name', 'signatory_title',
     ];
 
@@ -40,6 +40,7 @@ class Quotation extends Model
             'grand_total' => 'decimal:2',
             'fare_amount' => 'decimal:2',
             'usage_date' => 'date',
+            'usage_end_date' => 'date',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];

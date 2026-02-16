@@ -1,9 +1,16 @@
 @php
     use App\Support\IndonesianFormat;
+    use App\Support\Terbilang;
+    use Illuminate\Support\Str;
 
     $city = $quotation->city ?: 'Jakarta';
     $letterDate = IndonesianFormat::dateLong($quotation->date);
-    $usageDate = $quotation->usage_date ? IndonesianFormat::dateLong($quotation->usage_date) : '-';
+    $usageStartDate = $quotation->usage_date ? IndonesianFormat::dateLong($quotation->usage_date) : null;
+    $usageEndDate = $quotation->usage_end_date ? IndonesianFormat::dateLong($quotation->usage_end_date) : null;
+    $usageDurationDays = null;
+    if ($quotation->usage_date && $quotation->usage_end_date) {
+        $usageDurationDays = \Carbon\Carbon::parse($quotation->usage_date)->startOfDay()->diffInDays(\Carbon\Carbon::parse($quotation->usage_end_date)->startOfDay()) + 1;
+    }
 
     $tenantSettings = is_array($tenant?->settings) ? $tenant->settings : [];
 
@@ -32,7 +39,12 @@
         'Atau Cash',
     ]);
 
-    $includedText = filled($quotation->included_text) ? $quotation->included_text : 'Tol, Parkir, BBM, Premi Driver, dan Kernet';
+    $includedText = trim((string) ($quotation->included_text ?? ''));
+    $includedText = $includedText !== '' ? $includedText : null;
+    $excludedText = trim((string) ($quotation->excluded_text ?? ''));
+    $excludedText = $excludedText !== '' ? $excludedText : null;
+    $facilitiesText = trim((string) ($quotation->facilities_text ?? ''));
+    $facilitiesText = $facilitiesText !== '' ? $facilitiesText : null;
     $footerAddress = $tenant?->address ?: '-';
     $footerPhone = $tenant?->phone ?: '-';
     $footerWebsite = $branding['company_website'] ?? '-';
@@ -40,7 +52,10 @@
 
     $items = $quotation->items->sortBy('sort_order')->values();
     $recipientLine1 = $quotation->customer?->name ?: ($quotation->recipient_title_line1 ?: '-');
-    $recipientLine2 = $quotation->recipient_company_line2 ?: '-';
+    $primaryPic = $quotation->customer?->pics?->sortByDesc('is_primary')->first();
+    $recipientLine2 = $quotation->recipient_company_line2
+        ?: ($primaryPic?->name ? trim($primaryPic->name.($primaryPic->position ? " - {$primaryPic->position}" : '')) : '-');
+    $grandTotalTerbilang = Str::lower(Terbilang::make((float) $quotation->grand_total).' rupiah');
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -226,7 +241,7 @@
             </td>
             <td style="width: 40%; text-align: left; padding-left: 20px;">
                 {{ $city }}, {{ $letterDate }}<br>
-                Kepada<br>
+                Kepada Yth.<br>
                 <span style="font-weight: bold;">{{ $recipientLine1 }}</span><br>
                 <span style="font-weight: bold;">{{ $recipientLine2 }}</span>
             </td>
@@ -242,7 +257,18 @@
         <tr>
             <td class="label">Tanggal Pemakaian</td>
             <td class="c-colon">:</td>
-            <td>{{ $usageDate }}</td>
+            <td>
+                @if ($usageStartDate && $usageEndDate)
+                    {{ $usageStartDate }} s/d {{ $usageEndDate }}
+                    @if ($usageDurationDays)
+                        ({{ $usageDurationDays }} hari)
+                    @endif
+                @elseif ($usageStartDate)
+                    {{ $usageStartDate }}
+                @else
+                    -
+                @endif
+            </td>
         </tr>
     </table>
 
@@ -300,17 +326,29 @@
             <td style="text-align: right; font-weight: bold;">{{ IndonesianFormat::rupiah((float) $quotation->grand_total) }}</td>
         </tr>
     </table>
+    <div style="margin-top: 6px; text-align: right; font-style: italic; font-size: 10.5pt;">
+        Terbilang: {{ $grandTotalTerbilang }}
+    </div>
 
     <table class="details" style="margin-top: 10px;">
-        <tr>
-            <td class="label">Harga sudah termasuk</td>
-            <td class="c-colon">:</td>
-            <td>{!! nl2br(e($includedText)) !!}</td>
-        </tr>
+        @if (filled($includedText))
+            <tr>
+                <td class="label">Harga sudah termasuk</td>
+                <td class="c-colon">:</td>
+                <td>{!! nl2br(e($includedText)) !!}</td>
+            </tr>
+        @endif
+        @if (filled($excludedText))
+            <tr>
+                <td class="label">Harga tidak termasuk</td>
+                <td class="c-colon">:</td>
+                <td>{!! nl2br(e($excludedText)) !!}</td>
+            </tr>
+        @endif
         <tr>
             <td class="label">Fasilitas</td>
             <td class="c-colon">:</td>
-            <td>{!! nl2br(e($quotation->facilities_text ?: '-')) !!}</td>
+            <td>{!! nl2br(e($facilitiesText ?: '-')) !!}</td>
         </tr>
         <tr>
             <td class="label">Metode pembayaran</td>
