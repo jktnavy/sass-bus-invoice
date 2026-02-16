@@ -1,0 +1,72 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Invoice;
+use App\Models\Payment;
+use App\Models\Quotation;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+
+class AccountingService
+{
+    public function __construct(private readonly TenantContext $tenantContext)
+    {
+    }
+
+    public function nextNumber(string $docType, ?string $branchId = null): string
+    {
+        $tenantId = $this->tenantContext->requireTenantId();
+
+        $row = DB::selectOne(
+            "DECLARE @out NVARCHAR(80); EXEC dbo.sp_next_number @tenant_id = ?, @doc_type = ?, @branch_id = ?, @out_number = @out OUTPUT; SELECT number = @out;",
+            [$tenantId, $docType, $branchId],
+        );
+
+        return (string) $row->number;
+    }
+
+    public function recalcQuotationTotals(string $quotationId): void
+    {
+        DB::statement('EXEC dbo.sp_recalc_quotation_totals @quotation_id = ?', [$quotationId]);
+    }
+
+    public function recalcInvoiceTotals(string $invoiceId): void
+    {
+        DB::statement('EXEC dbo.sp_recalc_invoice_totals @invoice_id = ?', [$invoiceId]);
+    }
+
+    public function convertQuotationToInvoice(Quotation $quotation, Carbon $dueDate): array
+    {
+        $row = DB::selectOne(
+            'DECLARE @invoice_id UNIQUEIDENTIFIER, @invoice_number NVARCHAR(80); '
+            .'EXEC dbo.sp_convert_quotation_to_invoice @quotation_id = ?, @due_date = ?, '
+            .'@out_invoice_id = @invoice_id OUTPUT, @out_invoice_number = @invoice_number OUTPUT; '
+            .'SELECT invoice_id = CAST(@invoice_id AS NVARCHAR(36)), invoice_number = @invoice_number;',
+            [$quotation->id, $dueDate->toDateString()],
+        );
+
+        return [
+            'invoice_id' => (string) $row->invoice_id,
+            'invoice_number' => (string) $row->invoice_number,
+        ];
+    }
+
+    public function postPayment(Payment $payment): void
+    {
+        DB::statement('EXEC dbo.sp_post_payment @payment_id = ?', [$payment->id]);
+    }
+
+    public function reversePayment(Payment $payment): void
+    {
+        DB::statement('EXEC dbo.sp_reverse_payment @payment_id = ?', [$payment->id]);
+    }
+
+    public function allocatePayment(Payment $payment, Invoice $invoice, float $amount): void
+    {
+        DB::statement(
+            'EXEC dbo.sp_allocate_payment @payment_id = ?, @invoice_id = ?, @amount = ?',
+            [$payment->id, $invoice->id, $amount],
+        );
+    }
+}
