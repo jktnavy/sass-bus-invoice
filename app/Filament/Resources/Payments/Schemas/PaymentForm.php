@@ -24,7 +24,21 @@ class PaymentForm
                         TextInput::make('number')->disabled()->dehydrated()->required()->columnSpan(4),
                         Select::make('status')->options([0 => 'Draft', 1 => 'Posted', 2 => 'Reversed'])->required()->default(0)->columnSpan(4),
                         DatePicker::make('date')->required()->columnSpan(4),
-                        Select::make('customer_id')->options(fn () => Customer::query()->pluck('name', 'id')->all())->required()->searchable()->columnSpan(6),
+                        Select::make('customer_id')
+                            ->options(fn (callable $get) => Customer::query()
+                                ->where(function ($query) use ($get): void {
+                                    $query->where('is_active', 1);
+
+                                    if ($get('customer_id')) {
+                                        $query->orWhere('id', $get('customer_id'));
+                                    }
+                                })
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
+                                ->all())
+                            ->required()
+                            ->searchable()
+                            ->columnSpan(6),
                         Select::make('method')->options([
                             'cash' => 'Cash',
                             'transfer' => 'Transfer',

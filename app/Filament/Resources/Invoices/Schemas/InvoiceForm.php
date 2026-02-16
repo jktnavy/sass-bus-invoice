@@ -83,7 +83,21 @@ class InvoiceForm
                         ])->required()->default(0)->columnSpan(4),
                         DatePicker::make('date')->label('Tanggal Invoice')->required()->columnSpan(4),
                         DatePicker::make('due_date')->label('Jatuh Tempo')->required()->columnSpan(4),
-                        Select::make('customer_id')->options(fn () => Customer::query()->pluck('name', 'id')->all())->required()->searchable()->columnSpan(4),
+                        Select::make('customer_id')
+                            ->options(fn (callable $get) => Customer::query()
+                                ->where(function ($query) use ($get): void {
+                                    $query->where('is_active', 1);
+
+                                    if ($get('customer_id')) {
+                                        $query->orWhere('id', $get('customer_id'));
+                                    }
+                                })
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
+                                ->all())
+                            ->required()
+                            ->searchable()
+                            ->columnSpan(4),
                         TextInput::make('currency')->required()->default('IDR')->columnSpan(4),
                         Textarea::make('notes')->columnSpanFull(),
                     ]),

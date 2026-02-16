@@ -19,7 +19,24 @@ class QuotationsTable
                 TextColumn::make('number')->searchable(),
                 TextColumn::make('date')->date(),
                 TextColumn::make('customer.name')->label('Customer')->searchable(),
-                TextColumn::make('status'),
+                TextColumn::make('status')
+                    ->badge()
+                    ->formatStateUsing(fn ($state): string => match ((int) $state) {
+                        0 => 'Draft',
+                        1 => 'Sent',
+                        2 => 'Accepted',
+                        3 => 'Rejected',
+                        4 => 'Void',
+                        default => (string) $state,
+                    })
+                    ->color(fn ($state): string => match ((int) $state) {
+                        0 => 'gray',
+                        1 => 'info',
+                        2 => 'success',
+                        3 => 'warning',
+                        4 => 'danger',
+                        default => 'gray',
+                    }),
                 TextColumn::make('grand_total')->money('IDR'),
             ])
             ->filters([

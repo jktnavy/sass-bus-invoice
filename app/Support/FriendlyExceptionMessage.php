@@ -39,11 +39,11 @@ class FriendlyExceptionMessage
         $message = mb_strtolower($exception->getMessage());
 
         if (str_contains($message, 'fk_quotations_customer')) {
-            return 'Customer tidak bisa dihapus karena sudah dipakai pada dokumen Quotation.';
+            return 'Customer tidak bisa dihapus karena masih direferensikan dokumen Quotation. Status Void tidak menghapus dokumen.';
         }
 
         if (str_contains($message, 'fk_invoices_customer')) {
-            return 'Customer tidak bisa dihapus karena sudah dipakai pada dokumen Invoice.';
+            return 'Customer tidak bisa dihapus karena masih direferensikan dokumen Invoice. Status Void/Reversed tidak menghapus dokumen.';
         }
 
         if (str_contains($message, 'duplicate key') || str_contains($message, 'unique key constraint')) {

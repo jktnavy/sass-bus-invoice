@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Quotations\Pages;
 
 use App\Filament\Resources\Quotations\QuotationResource;
+use App\Filament\Resources\Quotations\Schemas\QuotationForm;
 use App\Models\Tenant;
 use App\Services\AccountingService;
 use App\Services\AuditLogService;
@@ -22,10 +23,13 @@ class CreateQuotation extends CreateRecordPage
         $data['attachment_text'] ??= '-';
         $data['subject_text'] ??= 'Penawaran Sewa Kendaraan';
         $data['fare_text_label'] ??= 'Harga sewa bus';
-        $data['opening_paragraph'] ??= 'Kami dari PT. Sumber Tali Asih (STA Trans) dengan segala kerendahan hati ingin menyampaikan niat baik kami untuk mendukung kelancaran kegiatan Bapak/Ibu. Kami dengan ini mengajukan penawaran harga sewa bus pariwisata dengan rincian sebagai berikut:';
+        $data['opening_paragraph'] ??= QuotationForm::defaultOpeningParagraph();
         $data['closing_paragraph'] ??= 'Demikian surat penawaran ini kami sampaikan, besar harapan kami agar dapat bekerja sama dengan instansi yang Bapak / Ibu pimpin. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.';
-        $data['signatory_name'] ??= $settings['signatory_name'] ?? auth()->user()?->name;
-        $data['signatory_title'] ??= $settings['signatory_position'] ?? null;
+        $data['included_text'] = filled($data['included_text'] ?? null) ? $data['included_text'] : null;
+        $data['facilities_text'] = filled($data['facilities_text'] ?? null) ? $data['facilities_text'] : 'AC, TV, Karaoke, Reclining Seats';
+        $data['payment_method_text'] = QuotationForm::defaultPaymentMethodText();
+        $data['signatory_name'] = $settings['signatory_name'] ?? auth()->user()?->name;
+        $data['signatory_title'] = $settings['signatory_position'] ?? null;
 
         return $data;
     }

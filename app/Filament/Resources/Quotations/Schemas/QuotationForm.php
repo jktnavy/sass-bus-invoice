@@ -9,11 +9,12 @@ use App\Models\Tenant;
 use App\Models\Tax;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
@@ -64,17 +65,36 @@ class QuotationForm
                             ->label('Berlaku Sampai')
                             ->helperText('Otomatis +7 hari dari Tanggal Quotation, namun tetap bisa diubah manual.')
                             ->columnSpan(4),
+                        DatePicker::make('usage_date')
+                            ->label('Tanggal Pemakaian')
+                            ->helperText('Tanggal pelaksanaan layanan/sewa.')
+                            ->columnSpan(4),
                         TextInput::make('city')
                             ->label('Kota Surat')
                             ->default('Jakarta')
                             ->required()
                             ->maxLength(100)
                             ->columnSpan(4),
+                        TextInput::make('subject_text')
+                            ->label('Perihal')
+                            ->default('Penawaran Sewa Kendaraan')
+                            ->required()
+                            ->columnSpan(8),
                         Select::make('customer_id')
                             ->label('Customer')
-                            ->options(fn () => Customer::query()->orderBy('name')->get()->mapWithKeys(fn (Customer $customer) => [
-                                $customer->id => trim(($customer->code ? "{$customer->code} - " : '').$customer->name),
-                            ])->all())
+                            ->options(fn (callable $get) => Customer::query()
+                                ->where(function ($query) use ($get): void {
+                                    $query->where('is_active', 1);
+
+                                    if ($get('customer_id')) {
+                                        $query->orWhere('id', $get('customer_id'));
+                                    }
+                                })
+                                ->orderBy('name')
+                                ->get()
+                                ->mapWithKeys(fn (Customer $customer) => [
+                                    $customer->id => trim(($customer->code ? "{$customer->code} - " : '').$customer->name),
+                                ])->all())
                             ->searchable()
                             ->live()
                             ->afterStateUpdated(function ($state, callable $get, callable $set): void {
@@ -86,8 +106,9 @@ class QuotationForm
 
                                 $customer = Customer::query()->find($state);
 
-                                if ($customer && blank($get('recipient_company_line2'))) {
-                                    $set('recipient_company_line2', $customer->name);
+                                if ($customer) {
+                                    // Baris 1 penerima = nama instansi (customer)
+                                    $set('recipient_title_line1', $customer->name);
                                 }
                             })
                             ->helperText(function ($state): string {
@@ -152,110 +173,51 @@ class QuotationForm
                                     return;
                                 }
 
-                                $set('recipient_title_line1', trim($pic->name.($pic->position ? " - {$pic->position}" : '')));
-
-                                $customer = Customer::query()->find($get('customer_id'));
-
-                                if ($customer && blank($get('recipient_company_line2'))) {
-                                    $set('recipient_company_line2', $customer->name);
-                                }
+                                // Baris 2 penerima = nama PIC customer
+                                $set('recipient_company_line2', trim($pic->name.($pic->position ? " - {$pic->position}" : '')));
                             })
                             ->columnSpan(4),
-                        Textarea::make('notes')->label('Catatan')->columnSpanFull(),
+                        Hidden::make('recipient_title_line1'),
+                        Hidden::make('recipient_company_line2'),
+                        Textarea::make('notes')->label('Catatan')->columnSpan(4),
                     ]),
 
-                Section::make('Format Surat Penawaran')
-                    ->description('Isi data surat sesuai format resmi quotation.')
+                Section::make('Ketentuan Layanan')
+                    ->description('Pengaturan tambahan sebelum item quotation.')
                     ->columnSpanFull()
                     ->columns(12)
                     ->schema([
-                        TextInput::make('recipient_title_line1')
-                            ->label('Penerima Baris 1')
-                            ->placeholder('Contoh: Ketua Bidang Perempuan')
-                            ->columnSpan(6),
-                        TextInput::make('recipient_company_line2')
-                            ->label('Penerima Baris 2 (Instansi)')
-                            ->placeholder('Contoh: DPP Partai Golkar')
-                            ->columnSpan(6),
-                        TextInput::make('attachment_text')
-                            ->label('Lampiran')
-                            ->default('-')
-                            ->required()
-                            ->columnSpan(4),
-                        TextInput::make('subject_text')
-                            ->label('Perihal')
-                            ->default('Penawaran Sewa Kendaraan')
-                            ->required()
-                            ->columnSpan(8),
-                        RichEditor::make('opening_paragraph')
-                            ->label('Paragraf Pembuka')
-                            ->default(fn (): string => self::defaultOpeningParagraph())
-                            ->columnSpanFull(),
-                        TextInput::make('vehicle_type_text')
-                            ->label('Jenis Kendaraan')
-                            ->placeholder('Contoh: Bus Besar AC kapasitas 59 seats.')
-                            ->columnSpan(6),
-                        TextInput::make('service_route_text')
-                            ->label('Rute Layanan')
-                            ->placeholder('Contoh: DPP Golkar - Drop Hotel 3G Bogor')
-                            ->columnSpan(6),
-                        TextInput::make('fare_text_label')
-                            ->label('Label Rincian Tarif')
-                            ->default('Harga sewa bus')
-                            ->columnSpan(6),
-                        TextInput::make('fare_amount')
-                            ->label('Nominal Tarif')
-                            ->numeric()
-                            ->default(0)
-                            ->helperText('Format rupiah otomatis di PDF. Contoh input: 2650000')
-                            ->columnSpan(3),
-                        DatePicker::make('usage_date')
-                            ->label('Tanggal Pemakaian')
-                            ->columnSpan(3),
-                        Textarea::make('included_text')
-                            ->label('Harga Sudah Termasuk')
-                            ->rows(3)
-                            ->placeholder('Contoh: Parkir, Tol, Bahan bakar, premi sopir, dan kernet. ( All-Ins )')
-                            ->columnSpan(6),
-                        Textarea::make('facilities_text')
-                            ->label('Fasilitas')
-                            ->rows(3)
-                            ->placeholder('Contoh: AC, TV, DVD, karaoke')
-                            ->columnSpan(6),
-                        Textarea::make('payment_method_text')
-                            ->label('Metode Pembayaran')
-                            ->rows(3)
-                            ->default(fn (): string => self::defaultPaymentMethodText())
-                            ->afterStateHydrated(function ($state, callable $set): void {
-                                if (filled($state)) {
+                        Toggle::make('is_all_in')
+                            ->label('All-Ins')
+                            ->dehydrated(false)
+                            ->default(false)
+                            ->live()
+                            ->helperText('Aktifkan jika harga sudah termasuk Tol, Parkir, BBM, Premi Driver, dan Kernet.')
+                            ->afterStateHydrated(function (callable $set, callable $get): void {
+                                $current = trim((string) $get('included_text'));
+                                $set('is_all_in', str_contains(mb_strtolower($current), mb_strtolower(self::allInIncludedText())));
+                            })
+                            ->afterStateUpdated(function ($state, callable $set, callable $get): void {
+                                if ($state) {
+                                    $set('included_text', self::allInIncludedText());
+
                                     return;
                                 }
 
-                                $set('payment_method_text', self::defaultPaymentMethodText());
+                                if (trim((string) $get('included_text')) === self::allInIncludedText()) {
+                                    $set('included_text', '');
+                                }
                             })
-                            ->helperText('Boleh multi-line. Contoh: Transfer Rekening [bank] lalu baris kedua Atau Cash.')
-                            ->columnSpan(6),
-                        TextInput::make('signatory_name')
-                            ->label('Nama Penandatangan')
-                            ->default(function (): ?string {
-                                $tenant = Tenant::query()->find(auth()->user()?->tenant_id);
-                                $tenantSignatory = is_array($tenant?->settings) ? ($tenant->settings['signatory_name'] ?? null) : null;
-
-                                return $tenantSignatory ?: auth()->user()?->name;
-                            })
-                            ->columnSpan(3),
-                        TextInput::make('signatory_title')
-                            ->label('Jabatan Penandatangan')
-                            ->default(function (): ?string {
-                                $tenant = Tenant::query()->find(auth()->user()?->tenant_id);
-
-                                return is_array($tenant?->settings) ? ($tenant->settings['signatory_position'] ?? null) : null;
-                            })
-                            ->columnSpan(3),
-                        RichEditor::make('closing_paragraph')
-                            ->label('Paragraf Penutup')
-                            ->default('Demikian surat penawaran ini kami sampaikan, besar harapan kami agar dapat bekerja sama dengan instansi yang Bapak / Ibu pimpin. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.')
-                            ->columnSpanFull(),
+                            ->columnSpan(4),
+                        Hidden::make('included_text')
+                            ->default(''),
+                        Textarea::make('facilities_text')
+                            ->label('Informasi Fasilitas')
+                            ->rows(3)
+                            ->default('AC, TV, Karaoke, Reclining Seats')
+                            ->placeholder('Contoh: AC, TV, Karaoke, Reclining Seats')
+                            ->helperText('Default fasilitas sudah terisi, namun tetap bisa diubah.')
+                            ->columnSpan(8),
                     ]),
 
                 Section::make('Item Quotation')
@@ -356,14 +318,14 @@ class QuotationForm
             ]);
     }
 
-    private static function defaultOpeningParagraph(): string
+    public static function defaultOpeningParagraph(): string
     {
         $tenantName = Tenant::query()->find(auth()->user()?->tenant_id)?->name ?? 'Perusahaan';
 
         return "Kami dari {$tenantName} dengan segala kerendahan hati ingin menyampaikan niat baik kami untuk mendukung kelancaran kegiatan Bapak/Ibu. Kami dengan ini mengajukan penawaran harga sewa bus pariwisata dengan rincian sebagai berikut:";
     }
 
-    private static function defaultPaymentMethodText(): string
+    public static function defaultPaymentMethodText(): string
     {
         $tenant = Tenant::query()->find(auth()->user()?->tenant_id);
         $settings = is_array($tenant?->settings) ? $tenant->settings : [];
@@ -383,5 +345,10 @@ class QuotationForm
         }
 
         return "Transfer Rekening\nAtau Cash";
+    }
+
+    public static function allInIncludedText(): string
+    {
+        return 'Tol, Parkir, BBM, Premi Driver, dan Kernet';
     }
 }

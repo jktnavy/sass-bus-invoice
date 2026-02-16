@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Customers\Schemas;
 
 use App\Services\TenantContext;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
@@ -36,6 +37,12 @@ class CustomerForm
                         TextInput::make('name')->required()->maxLength(200)->columnSpan(8),
                         TextInput::make('npwp')->maxLength(40)->columnSpan(4),
                         TextInput::make('payment_terms_days')->numeric()->default(0)->columnSpan(4),
+                        Toggle::make('is_active')
+                            ->label('Customer Aktif')
+                            ->default(true)
+                            ->inline(false)
+                            ->helperText('Jika nonaktif, customer tidak muncul saat membuat dokumen baru.')
+                            ->columnSpan(4),
                         Textarea::make('billing_address')->columnSpanFull(),
                         Textarea::make('notes')->columnSpanFull(),
                     ]),

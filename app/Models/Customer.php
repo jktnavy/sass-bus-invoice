@@ -18,11 +18,11 @@ class Customer extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['tenant_id', 'code', 'name', 'npwp', 'billing_address', 'payment_terms_days', 'notes'];
+    protected $fillable = ['tenant_id', 'code', 'name', 'npwp', 'billing_address', 'payment_terms_days', 'notes', 'is_active'];
 
     protected function casts(): array
     {
-        return ['created_at' => 'datetime', 'updated_at' => 'datetime'];
+        return ['is_active' => 'boolean', 'created_at' => 'datetime', 'updated_at' => 'datetime'];
     }
 
     public function pics(): HasMany
