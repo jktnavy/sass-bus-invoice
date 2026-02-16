@@ -15,6 +15,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class TenantResource extends Resource
 {
@@ -36,6 +37,21 @@ class TenantResource extends Resource
     public static function canAccess(): bool
     {
         return in_array(auth()->user()?->role, ['superadmin', 'admin'], true);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->role === 'superadmin';
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return auth()->user()?->role === 'superadmin';
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->role === 'superadmin';
     }
 
     public static function getEloquentQuery(): Builder

@@ -15,9 +15,14 @@ class SetTenantSessionContext
     {
         $user = Auth::user();
 
-        if ($user && ! empty($user->tenant_id)) {
-            app(TenantContext::class)->setTenantId($user->tenant_id);
-            DB::statement('EXEC sec.sp_set_tenant @tenant_id = ?', [$user->tenant_id]);
+        if ($user) {
+            if ($user->role === 'superadmin') {
+                app(TenantContext::class)->setTenantId(null);
+                DB::statement('EXEC sec.sp_set_context @tenant_id = ?, @is_superadmin = ?', [null, 1]);
+            } elseif (! empty($user->tenant_id)) {
+                app(TenantContext::class)->setTenantId($user->tenant_id);
+                DB::statement('EXEC sec.sp_set_context @tenant_id = ?, @is_superadmin = ?', [$user->tenant_id, 0]);
+            }
         }
 
         return $next($request);

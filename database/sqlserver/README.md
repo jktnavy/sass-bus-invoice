@@ -21,12 +21,15 @@ Jalankan file SQL berikut **berurutan** di database `bus_invoice_db`:
 6. `012_customer_is_active.sql`
 7. `013_quotation_excluded_text.sql`
 8. `014_quotation_usage_end_date.sql`
-9. `900_seed_demo.sql` (opsional demo)
+9. `015_rls_superadmin_context.sql`
+10. `900_seed_demo.sql` (opsional demo)
 
 ## Catatan penting
 - Login SQL Server untuk aplikasi disarankan **bukan** `sa` di production.
 - Middleware Laravel akan men-set tenant context setiap request:
   `EXEC sec.sp_set_tenant @tenant_id = '...'`
+- Untuk mode superadmin lintas tenant, context akan di-set:
+  `EXEC sec.sp_set_context @tenant_id = NULL, @is_superadmin = 1`
 - Untuk verifikasi manual RLS di SSMS:
   1. `EXEC sec.sp_set_tenant @tenant_id = '<tenant1-guid>'`
   2. `SELECT * FROM dbo.customers` (hanya data tenant 1)

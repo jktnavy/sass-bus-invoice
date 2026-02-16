@@ -14,7 +14,9 @@ class Panduan extends Page
 
     protected static string|\UnitEnum|null $navigationGroup = 'Help';
 
-    protected static ?string $title = 'Panduan Penggunaan Sistem';
+    protected static ?string $title = 'Penggunaan Sistem';
+
+    protected static ?string $navigationLabel = 'Penggunaan Sistem';
 
     protected static ?int $navigationSort = 1;
 

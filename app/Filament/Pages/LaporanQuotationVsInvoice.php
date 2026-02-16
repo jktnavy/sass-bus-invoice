@@ -19,7 +19,9 @@ class LaporanQuotationVsInvoice extends Page
 
     protected static string|\UnitEnum|null $navigationGroup = 'Reports';
 
-    protected static ?string $title = 'Laporan Quotation vs Invoice';
+    protected static ?string $title = 'Quotation vs Invoice';
+
+    protected static ?string $navigationLabel = 'Quotation vs Invoice';
 
     protected static ?int $navigationSort = 2;
 
