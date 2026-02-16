@@ -30,7 +30,7 @@ class DocumentPdfService
 
     public function renderInvoice(Invoice $invoice): array
     {
-        $invoice->load(['customer', 'items.tax']);
+        $invoice->load(['customer.pics', 'items.tax', 'sourceQuotation.customer.pics']);
         $tenant = Tenant::query()->find($invoice->tenant_id);
 
         $bytes = Pdf::loadView('pdf.invoice', [

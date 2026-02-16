@@ -15,6 +15,9 @@ class QuotationsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query
+                ->orderByDesc('date')
+                ->orderByDesc('created_at'))
             ->columns([
                 TextColumn::make('number')->searchable(),
                 TextColumn::make('date')->date(),
