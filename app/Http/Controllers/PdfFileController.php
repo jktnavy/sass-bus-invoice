@@ -53,6 +53,32 @@ class PdfFileController extends Controller
         ]);
     }
 
+    public function receiptPreview(Request $request, string $id)
+    {
+        $invoice = $this->resolveInvoice($request, $id);
+        abort_unless((float) $invoice->balance_total <= 0 || (int) $invoice->status === 3, 422, 'Kwitansi hanya tersedia untuk invoice lunas.');
+
+        $pdf = app(DocumentPdfService::class)->renderReceipt($invoice);
+
+        return response($pdf['bytes'], 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$pdf['filename'].'"',
+        ]);
+    }
+
+    public function receiptDownload(Request $request, string $id)
+    {
+        $invoice = $this->resolveInvoice($request, $id);
+        abort_unless((float) $invoice->balance_total <= 0 || (int) $invoice->status === 3, 422, 'Kwitansi hanya tersedia untuk invoice lunas.');
+
+        $pdf = app(DocumentPdfService::class)->renderReceipt($invoice);
+
+        return response($pdf['bytes'], 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$pdf['filename'].'"',
+        ]);
+    }
+
     private function resolveQuotation(Request $request, string $id): Quotation
     {
         $user = $request->user();
@@ -91,4 +117,3 @@ class PdfFileController extends Controller
         return $record;
     }
 }
-

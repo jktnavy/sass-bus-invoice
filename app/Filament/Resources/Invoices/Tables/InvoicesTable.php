@@ -80,6 +80,18 @@ class InvoicesTable
                     ->icon('heroicon-o-arrow-down-tray')
                     ->url(fn ($record): string => route('invoices.pdf.download', ['id' => $record->id]))
                     ->openUrlInNewTab(),
+                Action::make('openReceipt')
+                    ->label('Open Kwitansi')
+                    ->icon('heroicon-o-document-magnifying-glass')
+                    ->visible(fn ($record): bool => ((float) $record->balance_total <= 0 || (int) $record->status === 3) && (int) $record->status !== 4)
+                    ->url(fn ($record): string => route('invoices.receipt.preview', ['id' => $record->id]))
+                    ->openUrlInNewTab(),
+                Action::make('downloadReceipt')
+                    ->label('Download Kwitansi')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->visible(fn ($record): bool => ((float) $record->balance_total <= 0 || (int) $record->status === 3) && (int) $record->status !== 4)
+                    ->url(fn ($record): string => route('invoices.receipt.download', ['id' => $record->id]))
+                    ->openUrlInNewTab(),
             ])
             ->toolbarActions([]);
     }

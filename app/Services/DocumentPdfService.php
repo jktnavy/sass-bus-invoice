@@ -46,6 +46,24 @@ class DocumentPdfService
         ];
     }
 
+    public function renderReceipt(Invoice $invoice): array
+    {
+        $invoice->load(['customer.pics', 'sourceQuotation.customer.pics']);
+        $tenant = Tenant::query()->find($invoice->tenant_id);
+
+        $bytes = Pdf::loadView('pdf.receipt', [
+            'invoice' => $invoice,
+            'tenant' => $tenant,
+            'branding' => $this->resolveBranding($tenant),
+        ])->setPaper('a4', 'portrait')->output();
+
+        return [
+            'bytes' => $bytes,
+            'mime' => 'application/pdf',
+            'filename' => "kwitansi-{$invoice->number}.pdf",
+        ];
+    }
+
     private function resolveBranding(?Tenant $tenant): array
     {
         $settings = is_array($tenant?->settings) ? $tenant->settings : [];

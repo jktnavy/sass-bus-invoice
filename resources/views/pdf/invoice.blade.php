@@ -36,6 +36,7 @@
     $signatoryTitle = $tenantSettings['signatory_position'] ?? null;
 
     $grandTotalTerbilang = Str::title(Terbilang::make((float) $invoice->grand_total) . ' Rupiah');
+    $isPaid = ((float) $invoice->balance_total <= 0) || ((int) $invoice->status === 3);
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -101,6 +102,19 @@
             color: #0f172a;
             margin: 0;
             letter-spacing: -1px;
+        }
+
+        .paid-stamp {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 3px 12px;
+            border: 2px solid #166534;
+            color: #166534;
+            font-size: 11pt;
+            font-weight: 900;
+            border-radius: 4px;
+            letter-spacing: .5px;
+            transform: rotate(-5deg);
         }
 
         /* Info Grid */
@@ -196,17 +210,17 @@
             text-align: center;
         }
 
-        .signature-space {
-            height: 80px;
-            position: relative;
+        .signature-greeting {
+            margin-top: 6px;
+            margin-bottom: 8px;
+            font-weight: bold;
         }
 
         .stamp-img {
-            position: absolute;
             width: 120px;
-            top: 0;
-            left: 40px;
-            opacity: 0.8;
+            display: block;
+            margin: 0 auto 8px auto;
+            opacity: 0.85;
         }
     </style>
 </head>
@@ -225,6 +239,9 @@
             </td>
             <td width="50%" class="text-right">
                 <h2 class="doc-type">INVOICE</h2>
+                @if ($isPaid)
+                    <div class="paid-stamp">LUNAS</div>
+                @endif
                 <div class="text-slate-500">No: <strong>{{ $invoice->number }}</strong></div>
             </td>
         </tr>
@@ -366,11 +383,18 @@
                     <td class="text-right" style="font-size: 9pt;">
                         {{ IndonesianFormat::rupiah((float) $invoice->paid_total) }}</td>
                 </tr>
-                <tr style="background: #fef2f2;">
-                    <td class="font-bold uppercase" style="font-size: 10pt; padding: 5px;">Sisa Tagihan</td>
-                    <td class="text-right font-bold" style="font-size: 10pt; padding: 5px;">
-                        {{ IndonesianFormat::rupiah((float) $invoice->balance_total) }}</td>
-                </tr>
+                @if ($isPaid)
+                    <tr style="background: #ecfdf5;">
+                        <td class="font-bold uppercase" style="font-size: 10pt; padding: 5px; color:#166534;">Status Pembayaran</td>
+                        <td class="text-right font-bold" style="font-size: 10pt; padding: 5px; color:#166534;">LUNAS</td>
+                    </tr>
+                @else
+                    <tr style="background: #fef2f2;">
+                        <td class="font-bold uppercase" style="font-size: 10pt; padding: 5px;">Sisa Tagihan</td>
+                        <td class="text-right font-bold" style="font-size: 10pt; padding: 5px;">
+                            {{ IndonesianFormat::rupiah((float) $invoice->balance_total) }}</td>
+                    </tr>
+                @endif
             @endif
         </table>
     </div>
@@ -392,12 +416,12 @@
                 <td width="40%" class="text-right">
                     <div class="signature-box" style="margin-left: auto;">
                         <div>{{ $sourceQuotation?->city ?? 'Jakarta' }}, {{ $invoiceDate }}</div>
-                        <div class="font-bold" style="margin-top: 5px;">Hormat Kami,</div>
-                        <div class="signature-space">
-                            @if (!empty($branding['stamp_signature_data_uri']))
-                                <img src="{{ $branding['stamp_signature_data_uri'] }}" class="stamp-img">
-                            @endif
-                        </div>
+                        <div class="signature-greeting">Hormat Kami</div>
+                        @if (!empty($branding['stamp_signature_data_uri']))
+                            <img src="{{ $branding['stamp_signature_data_uri'] }}" class="stamp-img">
+                        @else
+                            <div style="height: 80px;"></div>
+                        @endif
                         <div class="font-bold" style="text-decoration: underline;">{{ $signatoryName }}</div>
                         <div class="text-slate-500" style="font-size: 9pt;">{{ $signatoryTitle }}</div>
                     </div>

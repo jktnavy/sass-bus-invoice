@@ -19,7 +19,20 @@ class PaymentsTable
                 TextColumn::make('method'),
                 TextColumn::make('amount')->money('IDR'),
                 TextColumn::make('unapplied_amount')->money('IDR'),
-                TextColumn::make('status'),
+                TextColumn::make('status')
+                    ->badge()
+                    ->formatStateUsing(fn ($state): string => match ((int) $state) {
+                        0 => 'Draft',
+                        1 => 'Posted',
+                        2 => 'Reversed',
+                        default => (string) $state,
+                    })
+                    ->color(fn ($state): string => match ((int) $state) {
+                        0 => 'gray',
+                        1 => 'success',
+                        2 => 'danger',
+                        default => 'gray',
+                    }),
             ])
             ->filters([
                 SelectFilter::make('status')->options([0 => 'Draft', 1 => 'Posted', 2 => 'Reversed']),

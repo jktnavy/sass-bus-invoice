@@ -193,10 +193,17 @@
             text-align: center;
         }
 
+        .signature-greeting {
+            margin-top: 6px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
         .stamp-signature {
-            width: 130px;
-            margin: -15px auto -10px auto;
+            width: 120px;
+            margin: 0 auto 8px auto;
             display: block;
+            opacity: 0.85;
         }
 
         .sign-name {
@@ -363,12 +370,12 @@
 
     <div class="signature-container">
         {{ $city }}, {{ $letterDate }}<br>
-        Hormat Kami<br>
+        <div class="signature-greeting">Hormat Kami</div>
 
         @if (!empty($branding['stamp_signature_data_uri']))
             <img class="stamp-signature" src="{{ $branding['stamp_signature_data_uri'] }}" alt="Cap dan tanda tangan">
         @else
-            <div style="height: 60px;"></div>
+            <div style="height: 80px;"></div>
         @endif
 
         <div class="sign-name">{{ $signatoryName }}</div>

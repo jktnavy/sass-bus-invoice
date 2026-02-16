@@ -48,6 +48,18 @@ class EditInvoice extends EditRecordPage
                 ->disabled(fn (): bool => (int) $this->record->status === 4)
                 ->url(fn (): string => route('invoices.pdf.download', ['id' => $this->record->id]))
                 ->openUrlInNewTab(),
+            Action::make('previewReceipt')
+                ->label('Preview Kwitansi')
+                ->icon('heroicon-o-document-magnifying-glass')
+                ->visible(fn (): bool => ((float) $this->record->balance_total <= 0 || (int) $this->record->status === 3) && (int) $this->record->status !== 4)
+                ->url(fn (): string => route('invoices.receipt.preview', ['id' => $this->record->id]))
+                ->openUrlInNewTab(),
+            Action::make('downloadReceipt')
+                ->label('Download Kwitansi')
+                ->icon('heroicon-o-document-arrow-down')
+                ->visible(fn (): bool => ((float) $this->record->balance_total <= 0 || (int) $this->record->status === 3) && (int) $this->record->status !== 4)
+                ->url(fn (): string => route('invoices.receipt.download', ['id' => $this->record->id]))
+                ->openUrlInNewTab(),
             DeleteAction::make()->visible(false),
         ];
     }

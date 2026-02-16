@@ -14,4 +14,6 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/quotations/{id}/pdf/download', [PdfFileController::class, 'quotationDownload'])->name('quotations.pdf.download');
     Route::get('/invoices/{id}/pdf/preview', [PdfFileController::class, 'invoicePreview'])->name('invoices.pdf.preview');
     Route::get('/invoices/{id}/pdf/download', [PdfFileController::class, 'invoiceDownload'])->name('invoices.pdf.download');
+    Route::get('/invoices/{id}/receipt/preview', [PdfFileController::class, 'receiptPreview'])->name('invoices.receipt.preview');
+    Route::get('/invoices/{id}/receipt/download', [PdfFileController::class, 'receiptDownload'])->name('invoices.receipt.download');
 });

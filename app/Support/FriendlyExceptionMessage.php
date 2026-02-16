@@ -46,6 +46,10 @@ class FriendlyExceptionMessage
             return 'Customer tidak bisa dihapus karena masih direferensikan dokumen Invoice. Status Void/Reversed tidak menghapus dokumen.';
         }
 
+        if (str_contains($message, 'cannot reverse payment with allocations')) {
+            return 'Payment tidak bisa di-reverse karena masih memiliki allocation ke invoice.';
+        }
+
         if (str_contains($message, 'duplicate key') || str_contains($message, 'unique key constraint')) {
             return 'Data duplikat terdeteksi. Gunakan nilai unik (misalnya kode/nomor berbeda).';
         }
