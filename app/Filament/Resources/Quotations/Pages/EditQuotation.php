@@ -4,17 +4,14 @@ namespace App\Filament\Resources\Quotations\Pages;
 
 use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Filament\Resources\Quotations\QuotationResource;
-use App\Models\Document;
 use App\Services\AccountingService;
 use App\Services\AuditLogService;
-use App\Services\DocumentPdfService;
-use Throwable;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
+use App\Filament\Actions\SafeDeleteAction as DeleteAction;
 use Filament\Notifications\Notification;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Support\Pages\EditRecordPage;
 
-class EditQuotation extends EditRecord
+class EditQuotation extends EditRecordPage
 {
     protected static string $resource = QuotationResource::class;
 
@@ -40,12 +37,7 @@ class EditQuotation extends EditRecord
                     Notification::make()
                         ->title('Invoice created: '.$result['invoice_number'])
                         ->success()
-                        ->actions([
-                            \Filament\Notifications\Actions\Action::make('open')
-                                ->label('Open Invoice')
-                                ->url(InvoiceResource::getUrl('edit', ['record' => $result['invoice_id']]))
-                                ->button(),
-                        ])
+                        ->body('Invoice berhasil dibuat. Buka dari menu Invoices.')
                         ->send();
                 }),
             Action::make('createInvoiceDraft')
@@ -54,54 +46,15 @@ class EditQuotation extends EditRecord
                 ->url(fn (): string => InvoiceResource::getUrl('create', [
                     'source_quotation_id' => $this->record->id,
                 ])),
-            Action::make('generatePdf')
-                ->label('Generate PDF')
-                ->icon('heroicon-o-document-arrow-down')
-                ->action(function (): void {
-                    try {
-                        $document = app(DocumentPdfService::class)->generateQuotation($this->record);
-                        app(AuditLogService::class)->log('document_generate', 'quotation', $this->record, null, [
-                            'document_id' => $document->id,
-                        ]);
-
-                        Notification::make()
-                            ->title('PDF quotation berhasil dibuat')
-                            ->success()
-                            ->actions([
-                                \Filament\Notifications\Actions\Action::make('open')
-                                    ->label('Open PDF')
-                                    ->url(route('documents.open', ['id' => $document->id]))
-                                    ->button(),
-                                \Filament\Notifications\Actions\Action::make('download')
-                                    ->label('Download PDF')
-                                    ->url(route('documents.download', ['id' => $document->id]))
-                                    ->button(),
-                            ])
-                            ->send();
-                    } catch (Throwable $exception) {
-                        Notification::make()
-                            ->title('Generate PDF gagal')
-                            ->body($exception->getMessage())
-                            ->danger()
-                            ->send();
-                    }
-                }),
             Action::make('previewPdf')
                 ->label('Preview PDF')
                 ->icon('heroicon-o-eye')
-                ->visible(fn (): bool => Document::query()
-                    ->where('owner_table', 'quotations')
-                    ->where('owner_id', $this->record->id)
-                    ->exists())
-                ->url(function (): string {
-                    $document = Document::query()
-                        ->where('owner_table', 'quotations')
-                        ->where('owner_id', $this->record->id)
-                        ->latest('created_at')
-                        ->firstOrFail();
-
-                    return route('documents.open', ['id' => $document->id]);
-                })
+                ->url(fn (): string => route('quotations.pdf.preview', ['id' => $this->record->id]))
+                ->openUrlInNewTab(),
+            Action::make('downloadPdf')
+                ->label('Download PDF')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->url(fn (): string => route('quotations.pdf.download', ['id' => $this->record->id]))
                 ->openUrlInNewTab(),
             DeleteAction::make()->visible(false),
         ];

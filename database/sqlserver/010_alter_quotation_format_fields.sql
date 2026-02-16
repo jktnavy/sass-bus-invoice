@@ -117,14 +117,24 @@ BEGIN
 END;
 
 -- Backfill existing rows if empty
-UPDATE dbo.quotations
-SET city = ISNULL(NULLIF(city, ''), N'Jakarta'),
-    attachment_text = ISNULL(NULLIF(attachment_text, ''), N'-'),
-    subject_text = ISNULL(NULLIF(subject_text, ''), N'Penawaran Sewa Kendaraan'),
-    fare_text_label = ISNULL(NULLIF(fare_text_label, ''), N'Harga sewa bus'),
-    opening_paragraph = ISNULL(NULLIF(opening_paragraph, ''), N'Kami dari PT. Sumber Tali Asih (STA Trans) dengan segala kerendahan hati ingin menyampaikan niat baik kami untuk mendukung kelancaran kegiatan Bapak/Ibu. Kami dengan ini mengajukan penawaran harga sewa bus pariwisata dengan rincian sebagai berikut:'),
-    closing_paragraph = ISNULL(NULLIF(closing_paragraph, ''), N'Demikian surat penawaran ini kami sampaikan, besar harapan kami agar dapat bekerja sama dengan instansi yang Bapak / Ibu pimpin. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.')
-WHERE 1 = 1;
+IF COL_LENGTH('dbo.quotations', 'city') IS NOT NULL
+    AND COL_LENGTH('dbo.quotations', 'attachment_text') IS NOT NULL
+    AND COL_LENGTH('dbo.quotations', 'subject_text') IS NOT NULL
+    AND COL_LENGTH('dbo.quotations', 'fare_text_label') IS NOT NULL
+    AND COL_LENGTH('dbo.quotations', 'opening_paragraph') IS NOT NULL
+    AND COL_LENGTH('dbo.quotations', 'closing_paragraph') IS NOT NULL
+BEGIN
+    EXEC sys.sp_executesql N'
+        UPDATE dbo.quotations
+        SET city = ISNULL(NULLIF(city, ''''), N''Jakarta''),
+            attachment_text = ISNULL(NULLIF(attachment_text, ''''), N''-''),
+            subject_text = ISNULL(NULLIF(subject_text, ''''), N''Penawaran Sewa Kendaraan''),
+            fare_text_label = ISNULL(NULLIF(fare_text_label, ''''), N''Harga sewa bus''),
+            opening_paragraph = ISNULL(NULLIF(opening_paragraph, ''''), N''Kami dari PT. Sumber Tali Asih (STA Trans) dengan segala kerendahan hati ingin menyampaikan niat baik kami untuk mendukung kelancaran kegiatan Bapak/Ibu. Kami dengan ini mengajukan penawaran harga sewa bus pariwisata dengan rincian sebagai berikut:''),
+            closing_paragraph = ISNULL(NULLIF(closing_paragraph, ''''), N''Demikian surat penawaran ini kami sampaikan, besar harapan kami agar dapat bekerja sama dengan instansi yang Bapak / Ibu pimpin. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.'')
+        WHERE 1 = 1;
+    ';
+END;
 
 -- =========================
 -- Documents metadata compatibility
@@ -134,9 +144,13 @@ BEGIN
     ALTER TABLE dbo.documents ADD storage_path NVARCHAR(500) NULL;
 END;
 
-UPDATE dbo.documents
-SET storage_path = path
-WHERE storage_path IS NULL;
+IF COL_LENGTH('dbo.documents', 'storage_path') IS NOT NULL
+BEGIN
+    EXEC sys.sp_executesql N'
+        UPDATE dbo.documents
+        SET storage_path = path
+        WHERE storage_path IS NULL;
+    ';
+END;
 
 COMMIT TRANSACTION;
-

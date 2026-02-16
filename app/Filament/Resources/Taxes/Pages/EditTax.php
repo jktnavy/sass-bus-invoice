@@ -3,10 +3,10 @@
 namespace App\Filament\Resources\Taxes\Pages;
 
 use App\Filament\Resources\Taxes\TaxResource;
-use Filament\Actions\DeleteAction;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Actions\SafeDeleteAction as DeleteAction;
+use App\Filament\Support\Pages\EditRecordPage;
 
-class EditTax extends EditRecord
+class EditTax extends EditRecordPage
 {
     protected static string $resource = TaxResource::class;
 

@@ -5,9 +5,9 @@ namespace App\Filament\Resources\Payments\Pages;
 use App\Filament\Resources\Payments\PaymentResource;
 use App\Services\AccountingService;
 use App\Services\AuditLogService;
-use Filament\Resources\Pages\CreateRecord;
+use App\Filament\Support\Pages\CreateRecordPage;
 
-class CreatePayment extends CreateRecord
+class CreatePayment extends CreateRecordPage
 {
     protected static string $resource = PaymentResource::class;
 

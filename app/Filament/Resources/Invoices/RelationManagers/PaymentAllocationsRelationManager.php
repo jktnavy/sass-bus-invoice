@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Invoices\RelationManagers;
 
-use Filament\Resources\RelationManagers\RelationManager;
+use App\Filament\Support\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 

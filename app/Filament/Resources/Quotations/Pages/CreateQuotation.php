@@ -6,9 +6,9 @@ use App\Filament\Resources\Quotations\QuotationResource;
 use App\Models\Tenant;
 use App\Services\AccountingService;
 use App\Services\AuditLogService;
-use Filament\Resources\Pages\CreateRecord;
+use App\Filament\Support\Pages\CreateRecordPage;
 
-class CreateQuotation extends CreateRecord
+class CreateQuotation extends CreateRecordPage
 {
     protected static string $resource = QuotationResource::class;
 

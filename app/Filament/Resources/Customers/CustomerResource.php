@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Customers;
 use App\Filament\Resources\Customers\Pages\CreateCustomer;
 use App\Filament\Resources\Customers\Pages\EditCustomer;
 use App\Filament\Resources\Customers\Pages\ListCustomers;
+use App\Filament\Resources\Customers\RelationManagers\CustomerPicsRelationManager;
 use App\Filament\Resources\Customers\Schemas\CustomerForm;
 use App\Filament\Resources\Customers\Tables\CustomersTable;
 use App\Models\Customer;
@@ -40,7 +41,9 @@ class CustomerResource extends Resource
 
     public static function getRelations(): array
     {
-        return [];
+        return [
+            CustomerPicsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

@@ -5,12 +5,12 @@ namespace App\Filament\Resources\Tenants\Pages;
 use App\Filament\Resources\Tenants\TenantResource;
 use App\Models\User;
 use App\Services\TenantBrandingService;
-use Filament\Actions\DeleteAction;
+use App\Filament\Actions\SafeDeleteAction as DeleteAction;
 use Filament\Notifications\Notification;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Support\Pages\EditRecordPage;
 use Filament\Support\Exceptions\Halt;
 
-class EditTenant extends EditRecord
+class EditTenant extends EditRecordPage
 {
     protected static string $resource = TenantResource::class;
 

@@ -3,9 +3,9 @@
 namespace App\Filament\Resources\Taxes\Pages;
 
 use App\Filament\Resources\Taxes\TaxResource;
-use Filament\Resources\Pages\CreateRecord;
+use App\Filament\Support\Pages\CreateRecordPage;
 
-class CreateTax extends CreateRecord
+class CreateTax extends CreateRecordPage
 {
     protected static string $resource = TaxResource::class;
 }

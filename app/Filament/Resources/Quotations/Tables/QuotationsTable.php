@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Quotations\Tables;
 
-use App\Models\Document;
 use App\Services\AccountingService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -54,36 +53,12 @@ class QuotationsTable
                 Action::make('openPdf')
                     ->label('Open PDF')
                     ->icon('heroicon-o-eye')
-                    ->visible(fn ($record): bool => Document::query()
-                        ->where('owner_table', 'quotations')
-                        ->where('owner_id', $record->id)
-                        ->exists())
-                    ->url(function ($record): string {
-                        $document = Document::query()
-                            ->where('owner_table', 'quotations')
-                            ->where('owner_id', $record->id)
-                            ->latest('created_at')
-                            ->firstOrFail();
-
-                        return route('documents.open', ['id' => $document->id]);
-                    })
+                    ->url(fn ($record): string => route('quotations.pdf.preview', ['id' => $record->id]))
                     ->openUrlInNewTab(),
                 Action::make('downloadPdf')
                     ->label('Download PDF')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->visible(fn ($record): bool => Document::query()
-                        ->where('owner_table', 'quotations')
-                        ->where('owner_id', $record->id)
-                        ->exists())
-                    ->url(function ($record): string {
-                        $document = Document::query()
-                            ->where('owner_table', 'quotations')
-                            ->where('owner_id', $record->id)
-                            ->latest('created_at')
-                            ->firstOrFail();
-
-                        return route('documents.download', ['id' => $document->id]);
-                    })
+                    ->url(fn ($record): string => route('quotations.pdf.download', ['id' => $record->id]))
                     ->openUrlInNewTab(),
             ])
             ->toolbarActions([]);

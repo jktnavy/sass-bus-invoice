@@ -4,9 +4,9 @@ namespace App\Filament\Resources\Users\Pages;
 
 use App\Filament\Resources\Users\UserResource;
 use App\Services\TenantContext;
-use Filament\Resources\Pages\CreateRecord;
+use App\Filament\Support\Pages\CreateRecordPage;
 
-class CreateUser extends CreateRecord
+class CreateUser extends CreateRecordPage
 {
     protected static string $resource = UserResource::class;
 

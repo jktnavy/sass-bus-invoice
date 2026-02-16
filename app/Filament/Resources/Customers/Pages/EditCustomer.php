@@ -3,10 +3,10 @@
 namespace App\Filament\Resources\Customers\Pages;
 
 use App\Filament\Resources\Customers\CustomerResource;
-use Filament\Actions\DeleteAction;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Actions\SafeDeleteAction as DeleteAction;
+use App\Filament\Support\Pages\EditRecordPage;
 
-class EditCustomer extends EditRecord
+class EditCustomer extends EditRecordPage
 {
     protected static string $resource = CustomerResource::class;
 

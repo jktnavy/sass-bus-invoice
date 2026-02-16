@@ -3,11 +3,14 @@
 namespace App\Filament\Resources\Quotations\Schemas;
 
 use App\Models\Customer;
+use App\Models\CustomerPic;
 use App\Models\Item;
 use App\Models\Tenant;
 use App\Models\Tax;
+use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -29,8 +32,7 @@ class QuotationForm
                             ->label('Nomor Quotation')
                             ->helperText('Nomor otomatis dari Number Sequence.')
                             ->disabled()
-                            ->dehydrated()
-                            ->required()
+                            ->dehydrated(false)
                             ->columnSpan(4),
                         Select::make('status')->options([
                             0 => 'Draft',
@@ -46,8 +48,22 @@ class QuotationForm
                             ->maxLength(3)
                             ->placeholder('IDR')
                             ->columnSpan(4),
-                        DatePicker::make('date')->label('Tanggal Quotation')->required()->columnSpan(4),
-                        DatePicker::make('valid_until')->label('Berlaku Sampai')->columnSpan(4),
+                        DatePicker::make('date')
+                            ->label('Tanggal Quotation')
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(function ($state, callable $set): void {
+                                if (! $state) {
+                                    return;
+                                }
+
+                                $set('valid_until', Carbon::parse($state)->addDays(7)->toDateString());
+                            })
+                            ->columnSpan(4),
+                        DatePicker::make('valid_until')
+                            ->label('Berlaku Sampai')
+                            ->helperText('Otomatis +7 hari dari Tanggal Quotation, namun tetap bisa diubah manual.')
+                            ->columnSpan(4),
                         TextInput::make('city')
                             ->label('Kota Surat')
                             ->default('Jakarta')
@@ -56,9 +72,94 @@ class QuotationForm
                             ->columnSpan(4),
                         Select::make('customer_id')
                             ->label('Customer')
-                            ->options(fn () => Customer::query()->pluck('name', 'id')->all())
+                            ->options(fn () => Customer::query()->orderBy('name')->get()->mapWithKeys(fn (Customer $customer) => [
+                                $customer->id => trim(($customer->code ? "{$customer->code} - " : '').$customer->name),
+                            ])->all())
                             ->searchable()
+                            ->live()
+                            ->afterStateUpdated(function ($state, callable $get, callable $set): void {
+                                $set('customer_pic_id', null);
+
+                                if (! $state) {
+                                    return;
+                                }
+
+                                $customer = Customer::query()->find($state);
+
+                                if ($customer && blank($get('recipient_company_line2'))) {
+                                    $set('recipient_company_line2', $customer->name);
+                                }
+                            })
+                            ->helperText(function ($state): string {
+                                if (! $state) {
+                                    return 'Pilih customer untuk menampilkan informasi PIC.';
+                                }
+
+                                $customer = Customer::query()->find($state);
+
+                                if (! $customer) {
+                                    return 'Customer tidak ditemukan.';
+                                }
+
+                                $pics = CustomerPic::query()->where('customer_id', $customer->id)->orderByDesc('is_primary')->orderBy('name')->get();
+
+                                if ($pics->isEmpty()) {
+                                    return 'Belum ada PIC. Tambahkan di Customer > relation PIC.';
+                                }
+
+                                $primary = $pics->first();
+
+                                return sprintf(
+                                    'PIC utama: %s | Phone: %s | Total PIC: %d',
+                                    $primary?->name ?: '-',
+                                    $primary?->phone ?: '-',
+                                    $pics->count()
+                                );
+                            })
                             ->required()
+                            ->columnSpan(4),
+                        Select::make('customer_pic_id')
+                            ->label('PIC Customer')
+                            ->dehydrated(false)
+                            ->searchable()
+                            ->live()
+                            ->options(function (callable $get): array {
+                                $customerId = $get('customer_id');
+
+                                if (! $customerId) {
+                                    return [];
+                                }
+
+                                return CustomerPic::query()
+                                    ->where('customer_id', $customerId)
+                                    ->orderByDesc('is_primary')
+                                    ->orderBy('name')
+                                    ->get()
+                                    ->mapWithKeys(fn (CustomerPic $pic) => [
+                                        $pic->id => trim($pic->name.($pic->position ? " ({$pic->position})" : '').($pic->phone ? " - {$pic->phone}" : '')),
+                                    ])
+                                    ->all();
+                            })
+                            ->helperText('Pilih PIC untuk mengisi otomatis blok penerima pada surat.')
+                            ->afterStateUpdated(function ($state, callable $get, callable $set): void {
+                                if (! $state) {
+                                    return;
+                                }
+
+                                $pic = CustomerPic::query()->find($state);
+
+                                if (! $pic) {
+                                    return;
+                                }
+
+                                $set('recipient_title_line1', trim($pic->name.($pic->position ? " - {$pic->position}" : '')));
+
+                                $customer = Customer::query()->find($get('customer_id'));
+
+                                if ($customer && blank($get('recipient_company_line2'))) {
+                                    $set('recipient_company_line2', $customer->name);
+                                }
+                            })
                             ->columnSpan(4),
                         Textarea::make('notes')->label('Catatan')->columnSpanFull(),
                     ]),
@@ -86,10 +187,9 @@ class QuotationForm
                             ->default('Penawaran Sewa Kendaraan')
                             ->required()
                             ->columnSpan(8),
-                        Textarea::make('opening_paragraph')
+                        RichEditor::make('opening_paragraph')
                             ->label('Paragraf Pembuka')
-                            ->rows(4)
-                            ->default('Kami dari PT. Sumber Tali Asih (STA Trans) dengan segala kerendahan hati ingin menyampaikan niat baik kami untuk mendukung kelancaran kegiatan Bapak/Ibu. Kami dengan ini mengajukan penawaran harga sewa bus pariwisata dengan rincian sebagai berikut:')
+                            ->default(fn (): string => self::defaultOpeningParagraph())
                             ->columnSpanFull(),
                         TextInput::make('vehicle_type_text')
                             ->label('Jenis Kendaraan')
@@ -125,25 +225,13 @@ class QuotationForm
                         Textarea::make('payment_method_text')
                             ->label('Metode Pembayaran')
                             ->rows(3)
-                            ->default(function (): string {
-                                $tenant = Tenant::query()->find(auth()->user()?->tenant_id);
-                                $settings = is_array($tenant?->settings) ? $tenant->settings : [];
-
-                                $bank = $settings['bank_name'] ?? null;
-                                $holder = $settings['bank_account_holder'] ?? null;
-                                $number = $settings['bank_account_number'] ?? null;
-
-                                if ($bank || $holder || $number) {
-                                    return trim(implode("\n", array_filter([
-                                        'Transfer Rekening',
-                                        $bank ? "Bank: {$bank}" : null,
-                                        $holder ? "Account Holder: {$holder}" : null,
-                                        $number ? "Account Number: {$number}" : null,
-                                        'Atau Cash',
-                                    ])));
+                            ->default(fn (): string => self::defaultPaymentMethodText())
+                            ->afterStateHydrated(function ($state, callable $set): void {
+                                if (filled($state)) {
+                                    return;
                                 }
 
-                                return "Transfer Rekening\nAtau Cash";
+                                $set('payment_method_text', self::defaultPaymentMethodText());
                             })
                             ->helperText('Boleh multi-line. Contoh: Transfer Rekening [bank] lalu baris kedua Atau Cash.')
                             ->columnSpan(6),
@@ -164,9 +252,8 @@ class QuotationForm
                                 return is_array($tenant?->settings) ? ($tenant->settings['signatory_position'] ?? null) : null;
                             })
                             ->columnSpan(3),
-                        Textarea::make('closing_paragraph')
+                        RichEditor::make('closing_paragraph')
                             ->label('Paragraf Penutup')
-                            ->rows(4)
                             ->default('Demikian surat penawaran ini kami sampaikan, besar harapan kami agar dapat bekerja sama dengan instansi yang Bapak / Ibu pimpin. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.')
                             ->columnSpanFull(),
                     ]),
@@ -267,5 +354,34 @@ class QuotationForm
                         TextInput::make('grand_total')->label('Grand Total')->numeric()->disabled()->dehydrated(false)->columnSpan(3),
                     ]),
             ]);
+    }
+
+    private static function defaultOpeningParagraph(): string
+    {
+        $tenantName = Tenant::query()->find(auth()->user()?->tenant_id)?->name ?? 'Perusahaan';
+
+        return "Kami dari {$tenantName} dengan segala kerendahan hati ingin menyampaikan niat baik kami untuk mendukung kelancaran kegiatan Bapak/Ibu. Kami dengan ini mengajukan penawaran harga sewa bus pariwisata dengan rincian sebagai berikut:";
+    }
+
+    private static function defaultPaymentMethodText(): string
+    {
+        $tenant = Tenant::query()->find(auth()->user()?->tenant_id);
+        $settings = is_array($tenant?->settings) ? $tenant->settings : [];
+
+        $bank = $settings['bank_name'] ?? null;
+        $holder = $settings['bank_account_holder'] ?? null;
+        $number = $settings['bank_account_number'] ?? null;
+
+        if ($bank || $holder || $number) {
+            return trim(implode("\n", array_filter([
+                'Transfer Rekening',
+                $bank ? "Bank: {$bank}" : null,
+                $holder ? "Account Holder: {$holder}" : null,
+                $number ? "Account Number: {$number}" : null,
+                'Atau Cash',
+            ])));
+        }
+
+        return "Transfer Rekening\nAtau Cash";
     }
 }

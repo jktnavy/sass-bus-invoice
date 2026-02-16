@@ -6,11 +6,11 @@ use App\Filament\Resources\Payments\PaymentResource;
 use App\Services\AccountingService;
 use App\Services\AuditLogService;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
+use App\Filament\Actions\SafeDeleteAction as DeleteAction;
 use Filament\Notifications\Notification;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Support\Pages\EditRecordPage;
 
-class EditPayment extends EditRecord
+class EditPayment extends EditRecordPage
 {
     protected static string $resource = PaymentResource::class;
 

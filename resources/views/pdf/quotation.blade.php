@@ -7,221 +7,265 @@
     $letterDate = IndonesianFormat::dateLong($quotation->date);
     $usageDate = $quotation->usage_date ? IndonesianFormat::dateLong($quotation->usage_date) : '-';
     $fareAmount = IndonesianFormat::rupiah($quotation->fare_amount);
-    $fareSpelled = Terbilang::make($quotation->fare_amount).' rupiah';
-    $signatoryName = $quotation->signatory_name ?: ($branding['signatory_name'] ?? '-');
-    $signatoryTitle = $quotation->signatory_title ?: ($branding['signatory_position'] ?? '-');
-    $opening = $quotation->opening_paragraph ?: 'Kami dari PT. Sumber Tali Asih (STA Trans) dengan segala kerendahan hati ingin menyampaikan niat baik kami untuk mendukung kelancaran kegiatan Bapak/Ibu. Kami dengan ini mengajukan penawaran harga sewa bus pariwisata dengan rincian sebagai berikut:';
-    $closing = $quotation->closing_paragraph ?: 'Demikian surat penawaran ini kami sampaikan, besar harapan kami agar dapat bekerja sama dengan instansi yang Bapak / Ibu pimpin. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.';
+    $fareSpelled = Str::lower(Terbilang::make($quotation->fare_amount) . ' rupiah');
+
+    $signatoryName = $quotation->signatory_name ?: $branding['signatory_name'] ?? '-';
+    $signatoryTitle = $quotation->signatory_title ?: $branding['signatory_position'] ?? '-';
+
+    $opening = trim(strip_tags((string) ($quotation->opening_paragraph ?? '')));
+    if ($opening === '' || mb_strlen($opening) < 20) {
+        $opening = 'Kami dari PT. Sumber Tali Asih (STA Trans) dengan segala kerendahan hati ingin menyampaikan niat baik kami untuk mendukung kelancaran kegiatan Bapak/Ibu. Kami dengan ini mengajukan penawaran harga sewa bus pariwisata dengan rincian sebagai berikut:';
+    }
+
+    $footerAddress = $tenant?->address ?: 'Jl. Akses Tol Cimanggis No. 73 Leuwinanggung, Tapos , Depok 16456';
+    $footerPhone = $tenant?->phone ?: '081287163189';
+    $footerWebsite = $branding['company_website'] ?? 'https://statransport.co.id/';
+    $footerEmail = $tenant?->email ?: 'suhendi.sta@gmail.com';
 @endphp
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="utf-8">
     <title>Quotation {{ $quotation->number }}</title>
     <style>
+        /* Pengaturan Kertas */
         @page {
             size: legal portrait;
-            margin: 22mm 20mm 28mm 20mm;
+            /* Margin diperkecil agar logo bisa sangat dekat ke atas dan footer ke bawah */
+            margin: 10mm 18mm 10mm 18mm;
         }
+
         body {
             font-family: "Times New Roman", Times, serif;
-            font-size: 12pt;
+            font-size: 11pt;
+            /* Menyesuaikan agar proporsional di Legal */
             color: #111;
-            line-height: 1.35;
+            line-height: 1.3;
+            margin: 0;
+            padding: 0;
         }
-        .header-table, .detail-table, .sign-table, .footer-table {
+
+        /* Logo Section - Mepet ke atas dan Ukuran Besar */
+        .letterhead {
+            margin-top: -5mm;
+            /* Menaikkan logo lebih tinggi lagi melewati margin standar */
+            margin-bottom: 10px;
+            text-align: left;
+        }
+
+        .company-logo {
+            height: 250px;
+            /* Sesuai permintaan Anda */
+            width: auto;
+            display: block;
+            object-fit: contain;
+            /* Menjaga rasio logo agar tidak gepeng */
+        }
+
+        table {
             width: 100%;
             border-collapse: collapse;
         }
-        .header-table td,
-        .detail-table td,
-        .sign-table td,
-        .footer-table td {
+
+        td {
             vertical-align: top;
-            padding: 0;
+            padding: 1px 0;
         }
-        .header-table .label {
-            width: 70px;
+
+        /* Header Info (No & Kepada) */
+        .header-table td {
+            font-size: 11pt;
         }
-        .header-table .colon {
-            width: 10px;
+
+        .c-label {
+            width: 80px;
+        }
+
+        .c-colon {
+            width: 15px;
             text-align: center;
         }
-        .header-table .right {
-            text-align: right;
-            width: 220px;
-        }
-        .row-gap {
-            height: 4px;
-        }
+
         .subject {
-            font-weight: 700;
+            font-weight: bold;
         }
-        .paragraph {
-            margin-top: 12px;
-            text-align: justify;
+
+        /* Details Table */
+        .details {
+            margin-top: 15px;
         }
-        .detail-table {
-            margin-top: 8px;
+
+        .details td {
+            padding: 2px 0;
         }
-        .detail-table .left-label {
+
+        .details .label {
             width: 180px;
-            font-weight: 700;
-            padding: 2px 0;
+            font-weight: bold;
         }
-        .detail-table .colon {
-            width: 12px;
-            text-align: center;
-            padding: 2px 0;
-        }
-        .detail-table .value {
-            padding: 2px 0;
-        }
-        .closing {
-            margin-top: 12px;
-            text-align: justify;
-        }
-        .sign-table {
-            margin-top: 12px;
-        }
-        .sign-cell {
-            width: 45%;
-            text-align: center;
-        }
-        .stamp-signature {
-            width: 150px;
-            height: auto;
-            margin: 8px auto 6px auto;
-            display: block;
-        }
-        .sign-name {
-            font-weight: 700;
-            text-decoration: underline;
-        }
+
+        /* Footer - Posisi Fixed Sangat Bawah */
         .footer {
             position: fixed;
-            left: 20mm;
-            right: 20mm;
-            bottom: 9mm;
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 9.5pt;
-            border-top: 1px solid #444;
-            padding-top: 4px;
-            color: #222;
-        }
-        .muted {
+            bottom: 5mm;
+            /* Mendekati tepi bawah kertas */
+            left: 0;
+            right: 0;
+            width: 100%;
+            border-top: 1px solid #000;
+            padding-top: 5px;
+            font-family: Arial, sans-serif;
+            font-size: 8.5pt;
             color: #333;
+            text-align: center;
+        }
+
+        .signature-container {
+            margin-top: 30px;
+            float: right;
+            width: 250px;
+            text-align: center;
+        }
+
+        .stamp-signature {
+            width: 130px;
+            margin: -15px auto -10px auto;
+            display: block;
+        }
+
+        .sign-name {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-top: 5px;
+        }
+
+        .clear {
+            clear: both;
         }
     </style>
 </head>
+
 <body>
+    @if (!empty($branding['logo_data_uri']))
+        <div class="letterhead">
+            <img class="company-logo" src="{{ $branding['logo_data_uri'] }}" alt="Logo">
+        </div>
+    @endif
+
     <table class="header-table">
         <tr>
-            <td class="label">No</td>
-            <td class="colon">:</td>
-            <td>{{ $quotation->number }}</td>
-            <td class="right">{{ $city }}, {{ $letterDate }}</td>
-        </tr>
-        <tr class="row-gap"><td colspan="4"></td></tr>
-        <tr>
-            <td colspan="3">
-                Kepada<br>
-                {{ $quotation->recipient_title_line1 ?: '-' }}<br>
-                {{ $quotation->recipient_company_line2 ?: '-' }}
+            <td style="width: 60%;">
+                <table>
+                    <tr>
+                        <td class="c-label">No</td>
+                        <td class="c-colon">:</td>
+                        <td>{{ $quotation->number }}</td>
+                    </tr>
+                    <tr>
+                        <td class="c-label">Lampiran</td>
+                        <td class="c-colon">:</td>
+                        <td>{{ $quotation->attachment_text ?: '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="c-label">Perihal</td>
+                        <td class="c-colon">:</td>
+                        <td class="subject">Penawaran Sewa Kendaraan</td>
+                    </tr>
+                </table>
             </td>
-            <td></td>
-        </tr>
-        <tr class="row-gap"><td colspan="4"></td></tr>
-        <tr>
-            <td class="label">Lampiran</td>
-            <td class="colon">:</td>
-            <td>{{ $quotation->attachment_text ?: '-' }}</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td class="label">Perihal</td>
-            <td class="colon">:</td>
-            <td class="subject">{{ $quotation->subject_text ?: 'Penawaran Sewa Kendaraan' }}</td>
-            <td></td>
+            <td style="width: 40%; text-align: left; padding-left: 20px;">
+                {{ $city }}, {{ $letterDate }}<br>
+                Kepada<br>
+                <span
+                    style="font-weight: bold;">{{ $quotation->recipient_title_line1 ?: 'Ketua Bidang Perempuan' }}</span><br>
+                <span style="font-weight: bold;">{{ $quotation->recipient_company_line2 ?: 'DPP Partai Golkar' }}</span>
+            </td>
         </tr>
     </table>
 
-    <div class="paragraph">
-        Dengan Hormat,<br>
-        {{ $opening }}
+    <div style="margin-top: 15px;">Dengan Hormat,</div>
+    <div style="text-align: justify; margin-top: 5px;">
+        {!! nl2br(e($opening)) !!}
     </div>
 
-    <table class="detail-table">
+    <table class="details">
         <tr>
-            <td class="left-label">Jenis Kendaraan</td>
-            <td class="colon">:</td>
-            <td class="value">{{ $quotation->vehicle_type_text ?: '-' }}</td>
+            <td class="label">Jenis Kendaraan</td>
+            <td class="c-colon">:</td>
+            <td>{!! nl2br(e($quotation->vehicle_type_text)) !!}</td>
         </tr>
         <tr>
-            <td class="left-label">Rute layanan</td>
-            <td class="colon">:</td>
-            <td class="value">{{ $quotation->service_route_text ?: '-' }}</td>
+            <td class="label">Rute layanan</td>
+            <td class="c-colon">:</td>
+            <td>{!! nl2br(e($quotation->service_route_text)) !!}</td>
         </tr>
         <tr>
-            <td class="left-label">Rincian tarif</td>
-            <td class="colon">:</td>
-            <td class="value">{{ $quotation->fare_text_label ?: 'Harga sewa bus' }} : {{ $fareAmount }} ( {{ Str::lower($fareSpelled) }} )</td>
+            <td class="label">Rincian tarif</td>
+            <td class="c-colon">:</td>
+            <td>
+                {{ $quotation->fare_text_label ?: 'Harga sewa bus' }} : {{ $fareAmount }} ( {{ $fareSpelled }}
+                )<br>
+                : {{ $fareAmount }} ( {{ $fareSpelled }} )
+            </td>
         </tr>
         <tr>
-            <td class="left-label">Tanggal Pemakaian</td>
-            <td class="colon">:</td>
-            <td class="value">{{ $usageDate }}</td>
+            <td class="label">Tanggal Pemakaian</td>
+            <td class="c-colon">:</td>
+            <td>{{ $usageDate }}</td>
         </tr>
         <tr>
-            <td class="left-label">Harga sudah termasuk</td>
-            <td class="colon">:</td>
-            <td class="value">{{ $quotation->included_text ?: '-' }}</td>
+            <td class="label">Harga sudah termasuk</td>
+            <td class="c-colon">:</td>
+            <td>{{ $quotation->included_text ?: 'Parkir, Tol, Bahan bakar, premi sopir, dan kernet. ( All-Ins )' }}
+            </td>
         </tr>
         <tr>
-            <td class="left-label">Fasilitas</td>
-            <td class="colon">:</td>
-            <td class="value">{{ $quotation->facilities_text ?: '-' }}</td>
+            <td class="label">Fasilitas</td>
+            <td class="c-colon">:</td>
+            <td>{{ $quotation->facilities_text ?: 'AC, TV, DVD, karaoke' }}</td>
         </tr>
         <tr>
-            <td class="left-label">Metode pembayaran</td>
-            <td class="colon">:</td>
-            <td class="value">{!! nl2br(e($quotation->payment_method_text ?: '-')) !!}</td>
-        </tr>
-    </table>
-
-    <div class="closing">{{ $closing }}</div>
-
-    <table class="sign-table">
-        <tr>
-            <td style="width:55%"></td>
-            <td class="sign-cell">
-                {{ $city }}, {{ $letterDate }}<br>
-                Hormat Kami
-                @if(!empty($branding['stamp_signature_data_uri']))
-                    <img class="stamp-signature" src="{{ $branding['stamp_signature_data_uri'] }}" alt="Cap & Tanda Tangan">
-                @else
-                    <div style="height:80px"></div>
-                @endif
-                <div class="sign-name">{{ $signatoryName }}</div>
-                <div>{{ $signatoryTitle }}</div>
+            <td class="label">Metode pembayaran</td>
+            <td class="c-colon">:</td>
+            <td>
+                Transfer Rekening<br>
+                Bank: BCA<br>
+                Account Holder: Suhendi<br>
+                Account Number: 406 061 5352<br>
+                Atau Cash
             </td>
         </tr>
     </table>
+
+    <div style="margin-top: 15px; text-align: justify;">
+        Demikian surat penawaran ini kami sampaikan, besar harapan kami agar dapat bekerja sama dengan instansi yang
+        Bapak / Ibu pimpin. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.
+    </div>
+
+    <div class="signature-container">
+        {{ $city }}, {{ $letterDate }}<br>
+        Hormat Kami<br>
+
+        @if (!empty($branding['stamp_signature_data_uri']))
+            <img class="stamp-signature" src="{{ $branding['stamp_signature_data_uri'] }}">
+        @else
+            <div style="height: 60px;"></div>
+        @endif
+
+        <div class="sign-name">{{ $signatoryName }}</div>
+        <div>{{ $signatoryTitle }}</div>
+    </div>
+
+    <div class="clear"></div>
 
     <div class="footer">
-        <table class="footer-table">
-            <tr>
-                <td class="muted">{{ $tenant?->address ?: '-' }}</td>
-            </tr>
-            <tr>
-                <td class="muted">
-                    Phone : {{ $tenant?->phone ?: '-' }}
-                    @if(!empty($branding['company_website'])) | Website: {{ $branding['company_website'] }} @endif
-                    @if(!empty($tenant?->email)) | Email: {{ $tenant->email }} @endif
-                </td>
-            </tr>
-        </table>
+        <div style="width: 100%;">
+            {{ $footerAddress }}<br>
+            Phone : {{ $footerPhone }}<br>
+            Website: {{ $footerWebsite }}. Email: {{ $footerEmail }}
+        </div>
     </div>
 </body>
-</html>
 
+</html>

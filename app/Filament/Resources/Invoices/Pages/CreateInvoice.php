@@ -7,9 +7,9 @@ use App\Models\Quotation;
 use App\Services\AccountingService;
 use App\Services\AuditLogService;
 use Carbon\Carbon;
-use Filament\Resources\Pages\CreateRecord;
+use App\Filament\Support\Pages\CreateRecordPage;
 
-class CreateInvoice extends CreateRecord
+class CreateInvoice extends CreateRecordPage
 {
     protected static string $resource = InvoiceResource::class;
 

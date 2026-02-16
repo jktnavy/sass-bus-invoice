@@ -17,7 +17,8 @@ Jalankan file SQL berikut **berurutan** di database `bus_invoice_db`:
 2. `002_logic.sql`
 3. `003_rls.sql`
 4. `010_alter_quotation_format_fields.sql`
-5. `900_seed_demo.sql` (opsional demo)
+5. `011_customer_pics.sql`
+6. `900_seed_demo.sql` (opsional demo)
 
 ## Catatan penting
 - Login SQL Server untuk aplikasi disarankan **bukan** `sa` di production.

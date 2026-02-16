@@ -3,10 +3,10 @@
 namespace App\Filament\Resources\AuditLogs\Pages;
 
 use App\Filament\Resources\AuditLogs\AuditLogResource;
-use Filament\Actions\DeleteAction;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Actions\SafeDeleteAction as DeleteAction;
+use App\Filament\Support\Pages\EditRecordPage;
 
-class EditAuditLog extends EditRecord
+class EditAuditLog extends EditRecordPage
 {
     protected static string $resource = AuditLogResource::class;
 

@@ -3,10 +3,10 @@
 namespace App\Filament\Resources\NumberSequences\Pages;
 
 use App\Filament\Resources\NumberSequences\NumberSequenceResource;
-use Filament\Actions\DeleteAction;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Actions\SafeDeleteAction as DeleteAction;
+use App\Filament\Support\Pages\EditRecordPage;
 
-class EditNumberSequence extends EditRecord
+class EditNumberSequence extends EditRecordPage
 {
     protected static string $resource = NumberSequenceResource::class;
 

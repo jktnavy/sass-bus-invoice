@@ -4,9 +4,9 @@ namespace App\Filament\Resources\Tenants\Pages;
 
 use App\Filament\Resources\Tenants\TenantResource;
 use App\Services\TenantBrandingService;
-use Filament\Resources\Pages\CreateRecord;
+use App\Filament\Support\Pages\CreateRecordPage;
 
-class CreateTenant extends CreateRecord
+class CreateTenant extends CreateRecordPage
 {
     protected static string $resource = TenantResource::class;
 

@@ -4,14 +4,13 @@ namespace App\Filament\Resources\Invoices\Pages;
 
 use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Services\AuditLogService;
-use App\Services\DocumentPdfService;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
+use App\Filament\Actions\SafeDeleteAction as DeleteAction;
 use Filament\Notifications\Notification;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Support\Pages\EditRecordPage;
 use Filament\Support\Exceptions\Halt;
 
-class EditInvoice extends EditRecord
+class EditInvoice extends EditRecordPage
 {
     protected static string $resource = InvoiceResource::class;
 
@@ -37,14 +36,18 @@ class EditInvoice extends EditRecord
                     app(AuditLogService::class)->log('void', 'invoice', $this->record, $old, $this->record->toArray());
                     Notification::make()->title('Invoice voided')->warning()->send();
                 }),
-            Action::make('generatePdf')
-                ->label('Generate PDF')
+            Action::make('previewPdf')
+                ->label('Preview PDF')
+                ->icon('heroicon-o-eye')
                 ->disabled(fn (): bool => (int) $this->record->status === 4)
-                ->action(function (): void {
-                    app(DocumentPdfService::class)->generateInvoice($this->record);
-                    app(AuditLogService::class)->log('document_generate', 'invoice', $this->record);
-                    Notification::make()->title('PDF generated')->success()->send();
-                }),
+                ->url(fn (): string => route('invoices.pdf.preview', ['id' => $this->record->id]))
+                ->openUrlInNewTab(),
+            Action::make('downloadPdf')
+                ->label('Download PDF')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->disabled(fn (): bool => (int) $this->record->status === 4)
+                ->url(fn (): string => route('invoices.pdf.download', ['id' => $this->record->id]))
+                ->openUrlInNewTab(),
             DeleteAction::make()->visible(false),
         ];
     }

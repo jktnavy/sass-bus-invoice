@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\DocumentFileController;
+use App\Http\Controllers\PdfFileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -10,6 +10,8 @@ Route::get('/', function () {
 Route::redirect('/login', '/admin/login')->name('login');
 
 Route::middleware('auth')->group(function (): void {
-    Route::get('/documents/{id}/open', [DocumentFileController::class, 'show'])->name('documents.open');
-    Route::get('/documents/{id}/download', [DocumentFileController::class, 'download'])->name('documents.download');
+    Route::get('/quotations/{id}/pdf/preview', [PdfFileController::class, 'quotationPreview'])->name('quotations.pdf.preview');
+    Route::get('/quotations/{id}/pdf/download', [PdfFileController::class, 'quotationDownload'])->name('quotations.pdf.download');
+    Route::get('/invoices/{id}/pdf/preview', [PdfFileController::class, 'invoicePreview'])->name('invoices.pdf.preview');
+    Route::get('/invoices/{id}/pdf/download', [PdfFileController::class, 'invoiceDownload'])->name('invoices.pdf.download');
 });

@@ -16,8 +16,6 @@ class CustomersTable
             ->columns([
                 TextColumn::make('code')->searchable(),
                 TextColumn::make('name')->searchable(),
-                TextColumn::make('pic_name')->label('PIC Name')->searchable(),
-                TextColumn::make('email'),
                 TextColumn::make('payment_terms_days')->label('Terms'),
                 TextColumn::make('created_at')->dateTime(),
             ])
