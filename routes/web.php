@@ -9,6 +9,12 @@ Route::get('/', function () {
 
 Route::redirect('/login', '/admin/login')->name('login');
 
+Route::middleware(['signed', 'throttle:30,1'])->group(function (): void {
+    Route::get('/share/quotations/{id}', [PdfFileController::class, 'quotationSharedPreview'])->name('share.quotations.preview');
+    Route::get('/share/invoices/{id}', [PdfFileController::class, 'invoiceSharedPreview'])->name('share.invoices.preview');
+    Route::get('/share/receipts/{id}', [PdfFileController::class, 'receiptSharedPreview'])->name('share.receipts.preview');
+});
+
 Route::middleware('auth')->group(function (): void {
     Route::get('/quotations/{id}/pdf/preview', [PdfFileController::class, 'quotationPreview'])->name('quotations.pdf.preview');
     Route::get('/quotations/{id}/pdf/download', [PdfFileController::class, 'quotationDownload'])->name('quotations.pdf.download');

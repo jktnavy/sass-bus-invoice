@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\Quotations\Tables;
 
 use App\Services\AccountingService;
+use App\Services\DocumentShareUrlService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -80,6 +82,19 @@ class QuotationsTable
                     ->icon('heroicon-o-arrow-down-tray')
                     ->url(fn ($record): string => route('quotations.pdf.download', ['id' => $record->id]))
                     ->openUrlInNewTab(),
+                Action::make('copyShareLink')
+                    ->label('Copy Share Link')
+                    ->icon('heroicon-o-link')
+                    ->action(function ($record): void {
+                        $url = app(DocumentShareUrlService::class)->quotation($record->id);
+
+                        Notification::make()
+                            ->title('Share link quotation siap')
+                            ->body($url)
+                            ->success()
+                            ->persistent()
+                            ->send();
+                    }),
             ])
             ->toolbarActions([]);
     }

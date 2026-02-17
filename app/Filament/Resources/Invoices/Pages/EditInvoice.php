@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Invoices\Pages;
 
 use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Services\AuditLogService;
+use App\Services\DocumentShareUrlService;
 use Filament\Actions\Action;
 use App\Filament\Actions\SafeDeleteAction as DeleteAction;
 use Filament\Notifications\Notification;
@@ -48,6 +49,20 @@ class EditInvoice extends EditRecordPage
                 ->disabled(fn (): bool => (int) $this->record->status === 4)
                 ->url(fn (): string => route('invoices.pdf.download', ['id' => $this->record->id]))
                 ->openUrlInNewTab(),
+            Action::make('copyInvoiceShareLink')
+                ->label('Copy Share Link Invoice')
+                ->icon('heroicon-o-link')
+                ->disabled(fn (): bool => (int) $this->record->status === 4)
+                ->action(function (): void {
+                    $url = app(DocumentShareUrlService::class)->invoice($this->record->id);
+
+                    Notification::make()
+                        ->title('Share link invoice siap')
+                        ->body($url)
+                        ->success()
+                        ->persistent()
+                        ->send();
+                }),
             Action::make('previewReceipt')
                 ->label('Preview Kwitansi')
                 ->icon('heroicon-o-document-magnifying-glass')
@@ -60,6 +75,20 @@ class EditInvoice extends EditRecordPage
                 ->visible(fn (): bool => ((float) $this->record->balance_total <= 0 || (int) $this->record->status === 3) && (int) $this->record->status !== 4)
                 ->url(fn (): string => route('invoices.receipt.download', ['id' => $this->record->id]))
                 ->openUrlInNewTab(),
+            Action::make('copyReceiptShareLink')
+                ->label('Copy Share Link Kwitansi')
+                ->icon('heroicon-o-link')
+                ->visible(fn (): bool => ((float) $this->record->balance_total <= 0 || (int) $this->record->status === 3) && (int) $this->record->status !== 4)
+                ->action(function (): void {
+                    $url = app(DocumentShareUrlService::class)->receipt($this->record->id);
+
+                    Notification::make()
+                        ->title('Share link kwitansi siap')
+                        ->body($url)
+                        ->success()
+                        ->persistent()
+                        ->send();
+                }),
             DeleteAction::make()->visible(false),
         ];
     }

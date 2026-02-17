@@ -8,6 +8,7 @@ use App\Filament\Resources\Quotations\Schemas\QuotationForm;
 use App\Models\Tenant;
 use App\Services\AccountingService;
 use App\Services\AuditLogService;
+use App\Services\DocumentShareUrlService;
 use Filament\Actions\Action;
 use App\Filament\Actions\SafeDeleteAction as DeleteAction;
 use Filament\Notifications\Notification;
@@ -58,6 +59,19 @@ class EditQuotation extends EditRecordPage
                 ->icon('heroicon-o-arrow-down-tray')
                 ->url(fn (): string => route('quotations.pdf.download', ['id' => $this->record->id]))
                 ->openUrlInNewTab(),
+            Action::make('copyShareLink')
+                ->label('Copy Share Link')
+                ->icon('heroicon-o-link')
+                ->action(function (): void {
+                    $url = app(DocumentShareUrlService::class)->quotation($this->record->id);
+
+                    Notification::make()
+                        ->title('Share link quotation siap')
+                        ->body($url)
+                        ->success()
+                        ->persistent()
+                        ->send();
+                }),
             DeleteAction::make()->visible(false),
         ];
     }

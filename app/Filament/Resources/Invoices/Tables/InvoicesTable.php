@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\Invoices\Tables;
 
 use App\Services\AccountingService;
+use App\Services\DocumentShareUrlService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -58,7 +60,7 @@ class InvoicesTable
                     ->action(function ($record): void {
                         DB::transaction(function () use ($record): void {
                             $new = $record->replicate();
-                            $new->number = app(AccountingService::class)->nextNumber('invoice');
+                            $new->number = app(AccountingService::class)->nextNumber('invoice', tenantId: $record->tenant_id);
                             $new->status = 0;
                             $new->paid_total = 0;
                             $new->save();
@@ -80,6 +82,20 @@ class InvoicesTable
                     ->icon('heroicon-o-arrow-down-tray')
                     ->url(fn ($record): string => route('invoices.pdf.download', ['id' => $record->id]))
                     ->openUrlInNewTab(),
+                Action::make('copyInvoiceShareLink')
+                    ->label('Copy Share Link Invoice')
+                    ->icon('heroicon-o-link')
+                    ->visible(fn ($record): bool => (int) $record->status !== 4)
+                    ->action(function ($record): void {
+                        $url = app(DocumentShareUrlService::class)->invoice($record->id);
+
+                        Notification::make()
+                            ->title('Share link invoice siap')
+                            ->body($url)
+                            ->success()
+                            ->persistent()
+                            ->send();
+                    }),
                 Action::make('openReceipt')
                     ->label('Open Kwitansi')
                     ->icon('heroicon-o-document-magnifying-glass')
@@ -92,6 +108,20 @@ class InvoicesTable
                     ->visible(fn ($record): bool => ((float) $record->balance_total <= 0 || (int) $record->status === 3) && (int) $record->status !== 4)
                     ->url(fn ($record): string => route('invoices.receipt.download', ['id' => $record->id]))
                     ->openUrlInNewTab(),
+                Action::make('copyReceiptShareLink')
+                    ->label('Copy Share Link Kwitansi')
+                    ->icon('heroicon-o-link')
+                    ->visible(fn ($record): bool => ((float) $record->balance_total <= 0 || (int) $record->status === 3) && (int) $record->status !== 4)
+                    ->action(function ($record): void {
+                        $url = app(DocumentShareUrlService::class)->receipt($record->id);
+
+                        Notification::make()
+                            ->title('Share link kwitansi siap')
+                            ->body($url)
+                            ->success()
+                            ->persistent()
+                            ->send();
+                    }),
             ])
             ->toolbarActions([]);
     }
