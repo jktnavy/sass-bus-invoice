@@ -62,11 +62,14 @@ class EditQuotation extends EditRecordPage
             Action::make('copyShareLink')
                 ->label('Copy Share Link')
                 ->icon('heroicon-o-link')
-                ->action(function (): void {
+                ->action(function (\Livewire\Component $livewire): void {
                     $url = app(DocumentShareUrlService::class)->quotation($this->record->id);
+                    $encodedUrl = json_encode($url, JSON_UNESCAPED_SLASHES);
+
+                    $livewire->js("navigator.clipboard?.writeText({$encodedUrl}).catch(() => {});");
 
                     Notification::make()
-                        ->title('Share link quotation siap')
+                        ->title('Share link quotation berhasil disalin')
                         ->body($url)
                         ->success()
                         ->persistent()

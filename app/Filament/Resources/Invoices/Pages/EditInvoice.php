@@ -53,11 +53,14 @@ class EditInvoice extends EditRecordPage
                 ->label('Copy Share Link Invoice')
                 ->icon('heroicon-o-link')
                 ->disabled(fn (): bool => (int) $this->record->status === 4)
-                ->action(function (): void {
+                ->action(function (\Livewire\Component $livewire): void {
                     $url = app(DocumentShareUrlService::class)->invoice($this->record->id);
+                    $encodedUrl = json_encode($url, JSON_UNESCAPED_SLASHES);
+
+                    $livewire->js("navigator.clipboard?.writeText({$encodedUrl}).catch(() => {});");
 
                     Notification::make()
-                        ->title('Share link invoice siap')
+                        ->title('Share link invoice berhasil disalin')
                         ->body($url)
                         ->success()
                         ->persistent()
@@ -79,11 +82,14 @@ class EditInvoice extends EditRecordPage
                 ->label('Copy Share Link Kwitansi')
                 ->icon('heroicon-o-link')
                 ->visible(fn (): bool => ((float) $this->record->balance_total <= 0 || (int) $this->record->status === 3) && (int) $this->record->status !== 4)
-                ->action(function (): void {
+                ->action(function (\Livewire\Component $livewire): void {
                     $url = app(DocumentShareUrlService::class)->receipt($this->record->id);
+                    $encodedUrl = json_encode($url, JSON_UNESCAPED_SLASHES);
+
+                    $livewire->js("navigator.clipboard?.writeText({$encodedUrl}).catch(() => {});");
 
                     Notification::make()
-                        ->title('Share link kwitansi siap')
+                        ->title('Share link kwitansi berhasil disalin')
                         ->body($url)
                         ->success()
                         ->persistent()
