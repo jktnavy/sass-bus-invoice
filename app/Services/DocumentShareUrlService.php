@@ -24,7 +24,7 @@ class DocumentShareUrlService
 
     private function signedUrl(string $routeName, string $id, bool $download = false): string
     {
-        return URL::temporarySignedRoute(
+        $relativeUrl = URL::temporarySignedRoute(
             $routeName,
             Carbon::now()->addMinutes($this->ttlMinutes()),
             [
@@ -32,7 +32,12 @@ class DocumentShareUrlService
                 'd' => $download ? 1 : 0,
                 'v' => 1,
             ],
+            absolute: false,
         );
+
+        $appUrl = rtrim((string) config('app.url'), '/');
+
+        return filled($appUrl) ? $appUrl.$relativeUrl : URL::to($relativeUrl);
     }
 
     private function ttlMinutes(): int
@@ -42,4 +47,3 @@ class DocumentShareUrlService
         return max($raw, 1);
     }
 }
-
