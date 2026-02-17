@@ -9,7 +9,7 @@ Route::get('/', function () {
 
 Route::redirect('/login', '/admin/login')->name('login');
 
-Route::middleware(['signed:relative', 'throttle:30,1'])->group(function (): void {
+Route::middleware(['throttle:30,1'])->group(function (): void {
     Route::get('/share/quotations/{id}', [PdfFileController::class, 'quotationSharedPreview'])->name('share.quotations.preview');
     Route::get('/share/invoices/{id}', [PdfFileController::class, 'invoiceSharedPreview'])->name('share.invoices.preview');
     Route::get('/share/receipts/{id}', [PdfFileController::class, 'receiptSharedPreview'])->name('share.receipts.preview');
