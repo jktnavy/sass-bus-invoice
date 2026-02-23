@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Invoices\Tables;
 use App\Services\AccountingService;
 use App\Services\DocumentShareUrlService;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
@@ -53,81 +54,86 @@ class InvoicesTable
                 ]),
             ])
             ->recordActions([
-                EditAction::make(),
-                Action::make('clone')
-                    ->label('Clone Record')
-                    ->icon('heroicon-o-squares-plus')
-                    ->action(function ($record): void {
-                        DB::transaction(function () use ($record): void {
-                            $new = $record->replicate();
-                            $new->number = app(AccountingService::class)->nextNumber('invoice', tenantId: $record->tenant_id);
-                            $new->status = 0;
-                            $new->paid_total = 0;
-                            $new->save();
+                ActionGroup::make([
+                    EditAction::make(),
+                    Action::make('clone')
+                        ->label('Clone Record')
+                        ->icon('heroicon-o-squares-plus')
+                        ->action(function ($record): void {
+                            DB::transaction(function () use ($record): void {
+                                $new = $record->replicate();
+                                $new->number = app(AccountingService::class)->nextNumber('invoice', tenantId: $record->tenant_id);
+                                $new->status = 0;
+                                $new->paid_total = 0;
+                                $new->save();
 
-                            foreach ($record->items as $item) {
-                                $newItem = $item->replicate();
-                                $newItem->invoice_id = $new->id;
-                                $newItem->save();
-                            }
-                        });
-                    }),
-                Action::make('openPdf')
-                    ->label('Open PDF')
-                    ->icon('heroicon-o-eye')
-                    ->url(fn ($record): string => route('invoices.pdf.preview', ['id' => $record->id]))
-                    ->openUrlInNewTab(),
-                Action::make('downloadPdf')
-                    ->label('Download PDF')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->url(fn ($record): string => route('invoices.pdf.download', ['id' => $record->id]))
-                    ->openUrlInNewTab(),
-                Action::make('copyInvoiceShareLink')
-                    ->label('Copy Share Link Invoice')
-                    ->icon('heroicon-o-link')
-                    ->visible(fn ($record): bool => (int) $record->status !== 4)
-                    ->action(function ($record, \Livewire\Component $livewire): void {
-                        $url = app(DocumentShareUrlService::class)->invoice($record->id);
-                        $encodedUrl = json_encode($url, JSON_UNESCAPED_SLASHES);
+                                foreach ($record->items as $item) {
+                                    $newItem = $item->replicate();
+                                    $newItem->invoice_id = $new->id;
+                                    $newItem->save();
+                                }
+                            });
+                        }),
+                    Action::make('openPdf')
+                        ->label('Open PDF')
+                        ->icon('heroicon-o-eye')
+                        ->url(fn ($record): string => route('invoices.pdf.preview', ['id' => $record->id]))
+                        ->openUrlInNewTab(),
+                    Action::make('downloadPdf')
+                        ->label('Download PDF')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->url(fn ($record): string => route('invoices.pdf.download', ['id' => $record->id]))
+                        ->openUrlInNewTab(),
+                    Action::make('copyInvoiceShareLink')
+                        ->label('Copy Share Link Invoice')
+                        ->icon('heroicon-o-link')
+                        ->visible(fn ($record): bool => (int) $record->status !== 4)
+                        ->action(function ($record, \Livewire\Component $livewire): void {
+                            $url = app(DocumentShareUrlService::class)->invoice($record->id);
+                            $encodedUrl = json_encode($url, JSON_UNESCAPED_SLASHES);
 
-                        $livewire->js("navigator.clipboard?.writeText({$encodedUrl}).catch(() => {});");
+                            $livewire->js("navigator.clipboard?.writeText({$encodedUrl}).catch(() => {});");
 
-                        Notification::make()
-                            ->title('Share link invoice berhasil disalin')
-                            ->body($url)
-                            ->success()
-                            ->persistent()
-                            ->send();
-                    }),
-                Action::make('openReceipt')
-                    ->label('Open Kwitansi')
-                    ->icon('heroicon-o-document-magnifying-glass')
-                    ->visible(fn ($record): bool => ((float) $record->balance_total <= 0 || (int) $record->status === 3) && (int) $record->status !== 4)
-                    ->url(fn ($record): string => route('invoices.receipt.preview', ['id' => $record->id]))
-                    ->openUrlInNewTab(),
-                Action::make('downloadReceipt')
-                    ->label('Download Kwitansi')
-                    ->icon('heroicon-o-document-arrow-down')
-                    ->visible(fn ($record): bool => ((float) $record->balance_total <= 0 || (int) $record->status === 3) && (int) $record->status !== 4)
-                    ->url(fn ($record): string => route('invoices.receipt.download', ['id' => $record->id]))
-                    ->openUrlInNewTab(),
-                Action::make('copyReceiptShareLink')
-                    ->label('Copy Share Link Kwitansi')
-                    ->icon('heroicon-o-link')
-                    ->visible(fn ($record): bool => ((float) $record->balance_total <= 0 || (int) $record->status === 3) && (int) $record->status !== 4)
-                    ->action(function ($record, \Livewire\Component $livewire): void {
-                        $url = app(DocumentShareUrlService::class)->receipt($record->id);
-                        $encodedUrl = json_encode($url, JSON_UNESCAPED_SLASHES);
+                            Notification::make()
+                                ->title('Share link invoice berhasil disalin')
+                                ->body($url)
+                                ->success()
+                                ->persistent()
+                                ->send();
+                        }),
+                    Action::make('openReceipt')
+                        ->label('Open Kwitansi')
+                        ->icon('heroicon-o-document-magnifying-glass')
+                        ->visible(fn ($record): bool => ((float) $record->balance_total <= 0 || (int) $record->status === 3) && (int) $record->status !== 4)
+                        ->url(fn ($record): string => route('invoices.receipt.preview', ['id' => $record->id]))
+                        ->openUrlInNewTab(),
+                    Action::make('downloadReceipt')
+                        ->label('Download Kwitansi')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->visible(fn ($record): bool => ((float) $record->balance_total <= 0 || (int) $record->status === 3) && (int) $record->status !== 4)
+                        ->url(fn ($record): string => route('invoices.receipt.download', ['id' => $record->id]))
+                        ->openUrlInNewTab(),
+                    Action::make('copyReceiptShareLink')
+                        ->label('Copy Share Link Kwitansi')
+                        ->icon('heroicon-o-link')
+                        ->visible(fn ($record): bool => ((float) $record->balance_total <= 0 || (int) $record->status === 3) && (int) $record->status !== 4)
+                        ->action(function ($record, \Livewire\Component $livewire): void {
+                            $url = app(DocumentShareUrlService::class)->receipt($record->id);
+                            $encodedUrl = json_encode($url, JSON_UNESCAPED_SLASHES);
 
-                        $livewire->js("navigator.clipboard?.writeText({$encodedUrl}).catch(() => {});");
+                            $livewire->js("navigator.clipboard?.writeText({$encodedUrl}).catch(() => {});");
 
-                        Notification::make()
-                            ->title('Share link kwitansi berhasil disalin')
-                            ->body($url)
-                            ->success()
-                            ->persistent()
-                            ->send();
-                    }),
+                            Notification::make()
+                                ->title('Share link kwitansi berhasil disalin')
+                                ->body($url)
+                                ->success()
+                                ->persistent()
+                                ->send();
+                        }),
+                ])
+                    ->label('Aksi')
+                    ->icon('heroicon-o-ellipsis-vertical')
+                    ->button(),
             ])
             ->toolbarActions([]);
     }

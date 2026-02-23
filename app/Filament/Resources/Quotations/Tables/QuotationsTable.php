@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Quotations\Tables;
 use App\Services\AccountingService;
 use App\Services\DocumentShareUrlService;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
@@ -54,50 +55,55 @@ class QuotationsTable
                 ]),
             ])
             ->recordActions([
-                EditAction::make(),
-                Action::make('clone')
-                    ->label('Clone Record')
-                    ->icon('heroicon-o-squares-plus')
-                    ->action(function ($record): void {
-                        DB::transaction(function () use ($record): void {
-                            $new = $record->replicate();
-                            $new->number = app(AccountingService::class)->nextNumber('quotation', tenantId: $record->tenant_id);
-                            $new->status = 0;
-                            $new->save();
+                ActionGroup::make([
+                    EditAction::make(),
+                    Action::make('clone')
+                        ->label('Clone Record')
+                        ->icon('heroicon-o-squares-plus')
+                        ->action(function ($record): void {
+                            DB::transaction(function () use ($record): void {
+                                $new = $record->replicate();
+                                $new->number = app(AccountingService::class)->nextNumber('quotation', tenantId: $record->tenant_id);
+                                $new->status = 0;
+                                $new->save();
 
-                            foreach ($record->items as $item) {
-                                $newItem = $item->replicate();
-                                $newItem->quotation_id = $new->id;
-                                $newItem->save();
-                            }
-                        });
-                    }),
-                Action::make('openPdf')
-                    ->label('Open PDF')
-                    ->icon('heroicon-o-eye')
-                    ->url(fn ($record): string => route('quotations.pdf.preview', ['id' => $record->id]))
-                    ->openUrlInNewTab(),
-                Action::make('downloadPdf')
-                    ->label('Download PDF')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->url(fn ($record): string => route('quotations.pdf.download', ['id' => $record->id]))
-                    ->openUrlInNewTab(),
-                Action::make('copyShareLink')
-                    ->label('Copy Share Link')
-                    ->icon('heroicon-o-link')
-                    ->action(function ($record, \Livewire\Component $livewire): void {
-                        $url = app(DocumentShareUrlService::class)->quotation($record->id);
-                        $encodedUrl = json_encode($url, JSON_UNESCAPED_SLASHES);
+                                foreach ($record->items as $item) {
+                                    $newItem = $item->replicate();
+                                    $newItem->quotation_id = $new->id;
+                                    $newItem->save();
+                                }
+                            });
+                        }),
+                    Action::make('openPdf')
+                        ->label('Open PDF')
+                        ->icon('heroicon-o-eye')
+                        ->url(fn ($record): string => route('quotations.pdf.preview', ['id' => $record->id]))
+                        ->openUrlInNewTab(),
+                    Action::make('downloadPdf')
+                        ->label('Download PDF')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->url(fn ($record): string => route('quotations.pdf.download', ['id' => $record->id]))
+                        ->openUrlInNewTab(),
+                    Action::make('copyShareLink')
+                        ->label('Copy Share Link')
+                        ->icon('heroicon-o-link')
+                        ->action(function ($record, \Livewire\Component $livewire): void {
+                            $url = app(DocumentShareUrlService::class)->quotation($record->id);
+                            $encodedUrl = json_encode($url, JSON_UNESCAPED_SLASHES);
 
-                        $livewire->js("navigator.clipboard?.writeText({$encodedUrl}).catch(() => {});");
+                            $livewire->js("navigator.clipboard?.writeText({$encodedUrl}).catch(() => {});");
 
-                        Notification::make()
-                            ->title('Share link quotation berhasil disalin')
-                            ->body($url)
-                            ->success()
-                            ->persistent()
-                            ->send();
-                    }),
+                            Notification::make()
+                                ->title('Share link quotation berhasil disalin')
+                                ->body($url)
+                                ->success()
+                                ->persistent()
+                                ->send();
+                        }),
+                ])
+                    ->label('Aksi')
+                    ->icon('heroicon-o-ellipsis-vertical')
+                    ->button(),
             ])
             ->toolbarActions([]);
     }
